@@ -57,13 +57,22 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { username: true, accountHolder: true },
+      });
+
       const newStatus = action === "approve" ? "APPROVED" : "REJECTED";
       await prisma.user.update({
         where: { id: userId },
         data: { status: newStatus },
       });
 
-      const resultText = action === "approve" ? "✅ 승인되었습니다." : "❌ 거절되었습니다.";
+      const memberInfo = user ? `\n회원 아이디: ${user.username}\n예금주: ${user.accountHolder}` : "";
+      const resultText =
+        action === "approve"
+          ? `✅ 승인되었습니다.${memberInfo}`
+          : `❌ 거절되었습니다.${memberInfo}`;
       await bot.answerCallbackQuery(queryId, { text: resultText });
       await bot.editMessageText(resultText, {
         chat_id: chatId,
@@ -77,7 +86,7 @@ export async function POST(request: Request) {
       const chatId = body.message.chat.id;
       await bot.sendMessage(
         chatId,
-        `이 채팅의 Chat ID는 \`${chatId}\` 입니다.\n.env 에 TELEGRAM_ADMIN_CHAT_ID=${chatId} 로 설정하세요.`
+        `이 채팅방은 가맹점 "벳이스트" 전용방입니다.\n궁금하신점은 본사로 문의주세여`
       );
       return NextResponse.json({ ok: true });
     }

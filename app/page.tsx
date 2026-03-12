@@ -131,13 +131,10 @@ export default function Home() {
             로그아웃
           </Button>
         </div>
-        <h1 className="text-slate-50 text-xl font-semibold">MUSETTING</h1>
+        <h1 className="text-slate-50 text-xl font-semibold">BETEAST</h1>
         <p className="text-slate-400 text-sm">승인된 회원입니다.</p>
         <div className="flex flex-col items-center gap-6 w-full max-w-xs">
-          <div className="w-full space-y-2">
-            <Label htmlFor="amount" className="text-slate-200">
-              금액 (원)
-            </Label>
+          <div className="w-full">
             <Input
               id="amount"
               type="text"
