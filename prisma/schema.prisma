@@ -4,10 +4,24 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model User {
+  id             String   @id @default(cuid())
+  username       String   @unique
+  password       String
+  bankName       String
+  accountNumber  String
+  accountHolder  String
+  role           String   @default("USER")
+  status         String   @default("PENDING")
+  canBuy         Boolean  @default(false)
+  canSell        Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
