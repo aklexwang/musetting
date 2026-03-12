@@ -32,6 +32,7 @@ export default function Home() {
   const [amount, setAmount] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmMode, setConfirmMode] = useState<"buy" | "sell" | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -76,11 +77,15 @@ export default function Home() {
   };
 
   const parsedAmount = amount.trim() === "" ? 0 : parseInt(amount.replace(/\D/g, ""), 10) || 0;
-  const amountValid = parsedAmount > 0;
+  const amountValid = parsedAmount >= 10000 && parsedAmount % 10000 === 0;
 
   const handleBuyClick = () => {
-    if (!amountValid) {
-      alert("금액을 입력해 주세요.");
+    if (parsedAmount < 10000) {
+      alert("금액을 입력해 주세요. (1만 원 이상)");
+      return;
+    }
+    if (parsedAmount % 10000 !== 0) {
+      alert("금액은 만 원 단위로만 입력 가능합니다. (예: 10000, 20000)");
       return;
     }
     setConfirmMode("buy");
@@ -88,25 +93,50 @@ export default function Home() {
   };
 
   const handleSellClick = () => {
-    if (!amountValid) {
-      alert("금액을 입력해 주세요.");
+    if (parsedAmount < 10000) {
+      alert("금액을 입력해 주세요. (1만 원 이상)");
+      return;
+    }
+    if (parsedAmount % 10000 !== 0) {
+      alert("금액은 만 원 단위로만 입력 가능합니다. (예: 10000, 20000)");
       return;
     }
     setConfirmMode("sell");
     setConfirmOpen(true);
   };
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     if (!confirmMode || !amountValid) return;
-    const formatted = parsedAmount.toLocaleString("ko-KR");
-    if (confirmMode === "buy") {
-      alert(`${formatted}원 구매 요청이 완료되었습니다.`);
-    } else {
-      alert(`${formatted}원 판매 요청이 완료되었습니다.`);
+    setConfirmLoading(true);
+    try {
+      const res = await fetch("/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: confirmMode === "buy" ? "BUY" : "SELL",
+          amount: parsedAmount,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data?.error ?? "거래 신청에 실패했습니다.");
+        return;
+      }
+      const formatted = parsedAmount.toLocaleString("ko-KR");
+      alert(
+        confirmMode === "buy"
+          ? `${formatted}원 구매 요청이 완료되었습니다. 가맹점 승인 후 대시보드에서 확인하세요.`
+          : `${formatted}원 판매 요청이 완료되었습니다. 가맹점 승인 후 대시보드에서 확인하세요.`
+      );
+      setConfirmOpen(false);
+      setConfirmMode(null);
+      setAmount("");
+      window.location.href = "/dashboard";
+    } catch {
+      alert("네트워크 오류가 발생했습니다.");
+    } finally {
+      setConfirmLoading(false);
     }
-    setConfirmOpen(false);
-    setConfirmMode(null);
-    setAmount("");
   };
 
   if (loading) {
@@ -194,8 +224,9 @@ export default function Home() {
               <Button
                 className={confirmMode === "buy" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-sky-600 hover:bg-sky-500"}
                 onClick={handleConfirmSubmit}
+                disabled={confirmLoading}
               >
-                2차 확인
+                {confirmLoading ? "신청 중..." : "2차 확인"}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -12,16 +12,30 @@ datasource db {
 }
 
 model User {
-  id             String   @id @default(cuid())
-  username       String   @unique
+  id             String        @id @default(cuid())
+  username       String        @unique
   password       String
   bankName       String
   accountNumber  String
   accountHolder  String
-  role           String   @default("USER")
-  status         String   @default("PENDING")
-  canBuy         Boolean  @default(false)
-  canSell        Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  role           String        @default("USER")
+  status         String        @default("PENDING")
+  canBuy         Boolean       @default(false)
+  canSell        Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  transactions   Transaction[]
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          String   // BUY | SELL
+  amount        Int      // 금액 (원)
+  status        String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  apiStatus     String   @default("IDLE")   // IDLE | SUCCESS | FAILED
+  axpayOrderId  String?  // AxPay 로그인 API 성공 시 order_id
+  axpayUrl      String?  // AxPay 로그인 API 성공 시 url (iframe용)
+  createdAt     DateTime @default(now())
 }
