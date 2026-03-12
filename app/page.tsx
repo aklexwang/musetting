@@ -131,7 +131,12 @@ export default function Home() {
             로그아웃
           </Button>
         </div>
-        <h1 className="text-slate-50 text-xl font-semibold">BETEAST</h1>
+        <img
+          src="https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_200,h_42,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png"
+          srcSet="https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_200,h_42,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png 1x, https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_274,h_58,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png 2x"
+          alt="BETEAST"
+          className="h-[42px] w-auto"
+        />
         <p className="text-slate-400 text-sm">승인된 회원입니다.</p>
         <div className="flex flex-col items-center gap-6 w-full max-w-xs">
           <div className="w-full">
