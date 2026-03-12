@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
     "db:dev": "prisma dev"
   },
   "dependencies": {

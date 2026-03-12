@@ -119,15 +119,23 @@ export default function Home() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        alert(data?.error ?? "거래 신청에 실패했습니다.");
+        const msg =
+          res.status === 401
+            ? "로그인이 필요합니다. 다시 로그인한 뒤 시도해 주세요."
+            : data?.error ?? "거래 신청에 실패했습니다.";
+        alert(msg);
         return;
       }
       const formatted = parsedAmount.toLocaleString("ko-KR");
-      alert(
+      const msg =
         confirmMode === "buy"
           ? `${formatted}원 구매 요청이 완료되었습니다. 가맹점 승인 후 대시보드에서 확인하세요.`
-          : `${formatted}원 판매 요청이 완료되었습니다. 가맹점 승인 후 대시보드에서 확인하세요.`
-      );
+          : `${formatted}원 판매 요청이 완료되었습니다. 가맹점 승인 후 대시보드에서 확인하세요.`;
+      if (data?.telegramSent === false) {
+        alert(`${msg}\n\n(텔레그램 알림이 전송되지 않았을 수 있습니다. 관리자는 어드민 페이지에서 확인하세요.)`);
+      } else {
+        alert(msg);
+      }
       setConfirmOpen(false);
       setConfirmMode(null);
       setAmount("");

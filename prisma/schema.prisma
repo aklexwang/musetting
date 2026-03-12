@@ -2,6 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 // Get a free hosted Postgres database in seconds: `npx create-db`
+// Transaction 테이블 생성: npx prisma db push (또는 npm run db:push)
 
 generator client {
   provider = "prisma-client-js"

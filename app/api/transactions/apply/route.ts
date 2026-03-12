@@ -6,33 +6,14 @@ import { prisma } from "@/lib/prisma";
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const adminChatIdRaw = process.env.TELEGRAM_ADMIN_CHAT_ID?.trim();
 
-/** 현재 로그인 유저의 거래 목록 (최신순, 대시보드용) */
-export async function GET() {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
-
-  try {
-    const list = await prisma.transaction.findMany({
-      where: { userId: session.userId },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    });
-    return NextResponse.json({ transactions: list });
-  } catch (err) {
-    console.error("GET /api/transactions:", err);
-    return NextResponse.json(
-      { error: "거래 목록 조회 중 오류가 발생했습니다." },
-      { status: 500 }
-    );
-  }
-}
-
-/** 거래 신청: Transaction 생성 + 텔레그램으로 승인/거절 요청 발송 */
+/**
+ * 거래 신청 (구매/판매)
+ * - AxPay 가이드: 신청 금액은 반드시 만 원 단위 (10000, 20000, ...)
+ * - Transaction 테이블에 PENDING 상태로 저장
+ * - 동시에 텔레그램으로 [승인]/[거절] 알림 발송
+ */
 export async function POST(request: Request) {
   const session = await getSession();
-  console.log("[transactions] POST 호출됨, session:", session ? { userId: session.userId, username: session.username } : "없음");
   if (!session) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
@@ -43,12 +24,15 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
-  console.log("[transactions] body:", body);
 
   const type = body.type === "SELL" ? "SELL" : "BUY";
   const amount = typeof body.amount === "number" ? body.amount : Number(body.amount);
+
   if (!Number.isInteger(amount) || amount < 10000) {
-    return NextResponse.json({ error: "금액은 1만 원 이상이어야 합니다." }, { status: 400 });
+    return NextResponse.json(
+      { error: "금액은 1만 원 이상이어야 합니다." },
+      { status: 400 }
+    );
   }
   if (amount % 10000 !== 0) {
     return NextResponse.json(
@@ -67,27 +51,11 @@ export async function POST(request: Request) {
         apiStatus: "IDLE",
       },
     });
-    console.log(
-      "[transactions] 생성됨:",
-      txn.id,
-      "userId:",
-      session.userId,
-      "username:",
-      session.username,
-      type,
-      amount
-    );
 
     let telegramSent = false;
-    if (!token || !adminChatIdRaw) {
-      console.warn(
-        "POST /api/transactions: 텔레그램 미발송 — TELEGRAM_BOT_TOKEN 또는 TELEGRAM_ADMIN_CHAT_ID가 없습니다."
-      );
-    } else {
+    if (token && adminChatIdRaw) {
       const adminChatId = Number(adminChatIdRaw);
-      if (Number.isNaN(adminChatId)) {
-        console.warn("POST /api/transactions: TELEGRAM_ADMIN_CHAT_ID가 숫자가 아닙니다.");
-      } else {
+      if (!Number.isNaN(adminChatId)) {
         try {
           const bot = new TelegramBot(token, { polling: false });
           const label = type === "BUY" ? "구매요청" : "판매요청";
@@ -103,14 +71,18 @@ export async function POST(request: Request) {
           await bot.sendMessage(adminChatId, text, { reply_markup: keyboard });
           telegramSent = true;
         } catch (tgErr) {
-          console.error("POST /api/transactions: 텔레그램 발송 실패 —", tgErr);
+          console.error("POST /api/transactions/apply: 텔레그램 발송 실패 —", tgErr);
         }
       }
+    } else {
+      console.warn(
+        "POST /api/transactions/apply: TELEGRAM_BOT_TOKEN 또는 TELEGRAM_ADMIN_CHAT_ID가 없습니다."
+      );
     }
 
     return NextResponse.json({ transaction: txn, telegramSent });
   } catch (err) {
-    console.error("POST /api/transactions:", err);
+    console.error("POST /api/transactions/apply:", err);
     return NextResponse.json(
       { error: "거래 신청 중 오류가 발생했습니다." },
       { status: 500 }

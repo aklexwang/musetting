@@ -40,6 +40,16 @@ interface AdminUser {
   createdAt: string;
 }
 
+interface AdminTransaction {
+  id: string;
+  type: string;
+  amount: number;
+  status: string;
+  apiStatus: string;
+  createdAt: string;
+  user: { username: string };
+}
+
 const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
   { value: "PENDING", label: "대기" },
   { value: "APPROVED", label: "승인" },
@@ -48,12 +58,15 @@ const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
 
 export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [transactions, setTransactions] = useState<AdminTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [txnLoading, setTxnLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [sendingTelegramId, setSendingTelegramId] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   const pendingCount = users.filter((u) => u.status === "PENDING").length;
+  const pendingTxns = transactions.filter((t) => t.status === "PENDING");
 
   const fetchUsers = async () => {
     setFetchError(null);
@@ -75,8 +88,23 @@ export default function AdminPage() {
     }
   };
 
+  const fetchTransactions = async () => {
+    setTxnLoading(true);
+    try {
+      const res = await fetch("/api/admin/transactions");
+      const data = await res.json();
+      if (res.ok && Array.isArray(data)) setTransactions(data);
+      else setTransactions([]);
+    } catch {
+      setTransactions([]);
+    } finally {
+      setTxnLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchTransactions();
   }, []);
 
   const updateUser = async (
@@ -160,6 +188,19 @@ export default function AdminPage() {
                 </span>
                 <p className="text-sm font-medium">
                   승인 대기 중인 가입 요청이 <strong>{pendingCount}건</strong> 있습니다.
+                </p>
+              </div>
+            )}
+            {pendingTxns.length > 0 && !txnLoading && (
+              <div
+                role="alert"
+                className="mb-6 flex items-center gap-3 rounded-lg border border-sky-500/50 bg-sky-500/10 px-4 py-3 text-sky-200"
+              >
+                <span className="text-lg" aria-hidden>
+                  📋
+                </span>
+                <p className="text-sm font-medium">
+                  승인 대기 중인 <strong>거래 신청</strong>이 <strong>{pendingTxns.length}건</strong> 있습니다. 텔레그램에서 [승인]/[거절] 처리하세요.
                 </p>
               </div>
             )}
@@ -289,6 +330,89 @@ export default function AdminPage() {
                   ))}
                 </TableBody>
               </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="mt-8 bg-slate-900/95 border-slate-800 ring-1 ring-slate-800 shadow-2xl">
+          <CardHeader className="border-b border-slate-800/80 pb-6">
+            <CardTitle className="text-xl font-semibold tracking-tight text-slate-50">
+              최근 거래 신청
+            </CardTitle>
+            <CardDescription className="text-slate-400">
+              구매/판매 신청 내역입니다. 텔레그램 알림이 오지 않아도 여기에서 확인할 수 있습니다.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {txnLoading ? (
+              <div className="flex justify-center py-8 text-slate-400">로딩 중...</div>
+            ) : transactions.length === 0 ? (
+              <div className="flex justify-center py-8 text-slate-500 text-sm">거래 신청이 없습니다.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-slate-800 hover:bg-transparent">
+                    <TableHead className="text-slate-300 font-medium">아이디</TableHead>
+                    <TableHead className="text-slate-300 font-medium">유형</TableHead>
+                    <TableHead className="text-slate-300 font-medium">금액</TableHead>
+                    <TableHead className="text-slate-300 font-medium">상태</TableHead>
+                    <TableHead className="text-slate-300 font-medium">신청일시</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.map((txn) => (
+                    <TableRow
+                      key={txn.id}
+                      className="border-slate-800 hover:bg-slate-800/50 transition-colors"
+                    >
+                      <TableCell className="text-slate-200 font-medium">
+                        {txn.user?.username ?? "-"}
+                      </TableCell>
+                      <TableCell className="text-slate-400">
+                        {txn.type === "BUY" ? "구매" : "판매"}
+                      </TableCell>
+                      <TableCell className="text-slate-400 font-mono">
+                        {txn.amount.toLocaleString("ko-KR")}원
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={
+                            txn.status === "PENDING"
+                              ? "text-amber-400"
+                              : txn.status === "APPROVED"
+                                ? "text-emerald-400"
+                                : "text-red-400"
+                          }
+                        >
+                          {txn.status === "PENDING"
+                            ? "대기"
+                            : txn.status === "APPROVED"
+                              ? "승인"
+                              : "거절"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-slate-500 text-sm">
+                        {new Date(txn.createdAt).toLocaleString("ko-KR", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            {!txnLoading && transactions.length > 0 && (
+              <button
+                type="button"
+                onClick={() => fetchTransactions()}
+                className="mt-4 px-3 py-1.5 rounded-md bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm"
+              >
+                새로고침
+              </button>
             )}
           </CardContent>
         </Card>
