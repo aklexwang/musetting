@@ -96,7 +96,7 @@ export async function POST(request: Request) {
       const messageId = body.callback_query.message?.message_id;
 
       if (!data || !chatId || messageId == null) {
-        await bot.answerCallbackQuery(queryId, { text: "처리할 수 없습니다." });
+        await bot.answerCallbackQuery(queryId);
         return NextResponse.json({ ok: true });
       }
 
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
       if (data.startsWith("list:")) {
         const listType = data.slice(5) as "signup" | "buy" | "sell";
         const text = listType === "signup" || listType === "buy" || listType === "sell" ? await getListText(listType) : "잘못된 목록 타입입니다.";
-        await bot.answerCallbackQuery(queryId, { text: "목록 조회됨" });
+        await bot.answerCallbackQuery(queryId);
         await bot.sendMessage(chatId, text).catch((e) => console.error("[webhook] sendMessage list 실패:", e));
         return NextResponse.json({ ok: true });
       }
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
       if (data.startsWith("txn:")) {
         const [, txnAction, txnId] = data.split(":");
         if (!txnId || (txnAction !== "approve" && txnAction !== "reject")) {
-          await bot.answerCallbackQuery(queryId, { text: "잘못된 요청입니다." });
+          await bot.answerCallbackQuery(queryId);
           return NextResponse.json({ ok: true });
         }
 
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
           },
         });
         if (!txn) {
-          await bot.answerCallbackQuery(queryId, { text: "거래를 찾을 수 없습니다." });
+          await bot.answerCallbackQuery(queryId);
           return NextResponse.json({ ok: true });
         }
 
@@ -140,7 +140,7 @@ export async function POST(request: Request) {
             ? new Date(txn.createdAt).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
             : "";
           const resultText = `✅ ${typeLabel}승인\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${dateStr}`;
-          await bot.answerCallbackQuery(queryId, { text: "승인되었습니다." });
+          await bot.answerCallbackQuery(queryId);
           await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch((e) => {
             console.error("[webhook] editMessageText 실패:", e);
           });
@@ -160,7 +160,7 @@ export async function POST(request: Request) {
               })()
             : "";
           const resultText = `❌ ${typeLabel} 승인 거절\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${rejectDateStr}`;
-          await bot.answerCallbackQuery(queryId, { text: "거절되었습니다." });
+          await bot.answerCallbackQuery(queryId);
           await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch(() => {});
         }
         return NextResponse.json({ ok: true });
@@ -169,7 +169,7 @@ export async function POST(request: Request) {
       // 회원 가입 승인/거절: approve:userId | reject:userId
       const [action, userId] = data.split(":");
       if (!userId || (action !== "approve" && action !== "reject")) {
-        await bot.answerCallbackQuery(queryId, { text: "잘못된 요청입니다." });
+        await bot.answerCallbackQuery(queryId);
         return NextResponse.json({ ok: true });
       }
 
@@ -198,7 +198,7 @@ export async function POST(request: Request) {
         action === "approve"
           ? `✅ 가입승인되었습니다.${memberInfo}`
           : `❌ 회원거절${memberInfo}`;
-      await bot.answerCallbackQuery(queryId, { text: resultText });
+      await bot.answerCallbackQuery(queryId);
       await bot.editMessageText(resultText, {
         chat_id: chatId,
         message_id: messageId,
