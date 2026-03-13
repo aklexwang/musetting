@@ -41,14 +41,20 @@ export async function login(params: AxPayLoginParams): Promise<AxPayLoginResult>
   }
 
   const form = new FormData();
-  form.append("token", AXPAY_TOKEN);
-  form.append("user_id", params.username);
+  form.append("token", String(AXPAY_TOKEN));
+  form.append("user_id", String(params.username));
   form.append("type", params.type === "BUY" ? "1" : "2");
   form.append("money", String(params.amount));
-  form.append("wallet_car_number", params.accountNumber);
-  form.append("wallet_bank", params.bankName);
-  form.append("wallet_name", params.accountHolder);
+  form.append("wallet_car_number", String(params.accountNumber));
+  form.append("wallet_bank", String(params.bankName));
+  form.append("wallet_name", String(params.accountHolder));
   form.append("transaction_amount", String(params.amount));
+
+  const formLog: Record<string, string> = {};
+  for (const [key, value] of form.entries()) {
+    formLog[key] = key === "token" ? "[SET]" : String(value);
+  }
+  console.log("[AxPay] login 요청 FormData:", formLog);
 
   const base = AXPAY_BASE_URL.replace(/\/$/, "");
   const loginUrl = `${base}/api/index/login`;
