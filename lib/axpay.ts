@@ -65,6 +65,21 @@ export async function login(params: AxPayLoginParams): Promise<AxPayLoginResult>
     clearTimeout(timeoutId);
 
     const rawText = await res.text();
+    const isServerErrorHtml =
+      typeof rawText === "string" &&
+      (rawText.includes("Fatal error") ||
+        rawText.includes("think\\exception") ||
+        rawText.includes("Stack trace") ||
+        rawText.trimStart().startsWith("<"));
+    if (isServerErrorHtml) {
+      console.warn("[AxPay] login 응답이 HTML/서버오류:", rawText?.slice(0, 300));
+      return {
+        success: false,
+        message: "AxPay 서버 오류가 발생했습니다. AxPay 측 점검 후 재시도해 주세요.",
+        rawResponse: "서버응답: PHP Fatal error (AxPay 측 오류)",
+      };
+    }
+
     let json: Record<string, unknown> = {};
     try {
       json = JSON.parse(rawText) as Record<string, unknown>;
