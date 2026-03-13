@@ -42,7 +42,7 @@ export async function GET(request: Request) {
       const status = queryResult.status;
       if (status !== 1 && status !== 2) continue;
 
-      const callbackResult = await orderCallback(orderId, status);
+      const callbackResult = await orderCallback(orderId);
       if (!callbackResult.success) {
         console.warn(`[sync] order_callback fail for ${orderId}:`, callbackResult.message);
         continue;
