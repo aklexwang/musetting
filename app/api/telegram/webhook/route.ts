@@ -95,9 +95,10 @@ export async function POST(request: Request) {
                 axpayUrl: result.url ?? null,
               },
             });
+            const typeLabel = txn.type === "BUY" ? "구매" : "판매";
             const resultText = result.success
-              ? `✅ 거래 승인 완료.\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원`
-              : `⚠️ 거래 승인했으나 AxPay 실패.\n아이디: ${txn.user.username}\n${result.message ?? ""}`;
+              ? `✅ 거래 승인 완료 (${typeLabel}).\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원`
+              : `⚠️ 거래 승인했으나 AxPay 실패 (${typeLabel}).\n아이디: ${txn.user.username}\n${result.message ?? ""}`;
             await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch((e) => {
               console.error("[webhook] editMessageText 실패:", e);
             });
@@ -107,7 +108,8 @@ export async function POST(request: Request) {
               where: { id: txnId },
               data: { status: "APPROVED", apiStatus: "FAILED" },
             }).catch((e) => console.error("[webhook] transaction update 실패:", e));
-            const errMsg = `⚠️ 거래 승인 처리 중 오류.\n아이디: ${txn.user.username}`;
+            const typeLabel = txn.type === "BUY" ? "구매" : "판매";
+            const errMsg = `⚠️ 거래 승인 처리 중 오류 (${typeLabel}).\n아이디: ${txn.user.username}`;
             await bot.editMessageText(errMsg, { chat_id: chatId, message_id: messageId }).catch((e) => {
               console.error("[webhook] editMessageText(오류) 실패:", e);
             });
@@ -117,7 +119,8 @@ export async function POST(request: Request) {
             where: { id: txnId },
             data: { status: "REJECTED" },
           });
-          const resultText = `❌ 거래 거절.\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원`;
+          const typeLabel = txn.type === "BUY" ? "구매" : "판매";
+          const resultText = `❌ 거래 거절 (${typeLabel}).\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원`;
           await bot.answerCallbackQuery(queryId, { text: "거절되었습니다." });
           await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch(() => {});
         }
