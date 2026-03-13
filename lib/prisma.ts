@@ -6,9 +6,7 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefi
 function normalizeDatabaseUrl(url: string): string {
   try {
     const u = new URL(url);
-    if (!u.searchParams.has("sslmode")) {
-      u.searchParams.set("sslmode", "verify-full");
-    }
+    u.searchParams.set("sslmode", "verify-full");
     return u.toString();
   } catch {
     return url;

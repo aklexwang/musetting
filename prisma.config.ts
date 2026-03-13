@@ -6,7 +6,7 @@ import { defineConfig } from "prisma/config";
 function withSslMode(url: string): string {
   try {
     const u = new URL(url);
-    if (!u.searchParams.has("sslmode")) u.searchParams.set("sslmode", "verify-full");
+    u.searchParams.set("sslmode", "verify-full");
     return u.toString();
   } catch {
     return url;
