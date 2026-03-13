@@ -61,32 +61,68 @@ export async function login(params: AxPayLoginParams): Promise<AxPayLoginResult>
     return { success: false, message: `필수 필드가 비어 있거나 올바르지 않습니다: ${missing.join(", ")}` };
   }
 
-  const form = new FormData();
-  form.append("token", String(AXPAY_TOKEN));
-  form.append("user_id", user_id);
-  form.append("type", type);
-  form.append("money", money);
-  form.append("wallet_car_number", wallet_car_number);
-  form.append("wallet_bank", wallet_bank);
-  form.append("wallet_name", wallet_name);
-  form.append("transaction_amount", transaction_amount);
-
-  const formLog: Record<string, string> = {};
-  for (const [key, value] of form.entries()) {
-    formLog[key] = key === "token" ? "[SET]" : String(value);
-  }
-  console.log("[AxPay] login 요청 FormData:", formLog);
-
   const base = AXPAY_BASE_URL.replace(/\/$/, "");
   const loginUrl = `${base}/api/index/login`;
   const AXPAY_TIMEOUT_MS = 15000;
+  const useUrlEncoded = process.env.AXPAY_USE_URLENCODED === "true" || process.env.AXPAY_USE_URLENCODED === "1";
+
+  let body: FormData | URLSearchParams;
+  if (useUrlEncoded) {
+    body = new URLSearchParams();
+    body.set("token", String(AXPAY_TOKEN));
+    body.set("user_id", user_id);
+    body.set("type", type);
+    body.set("money", money);
+    body.set("wallet_car_number", wallet_car_number);
+    body.set("wallet_bank", wallet_bank);
+    body.set("wallet_name", wallet_name);
+    body.set("transaction_amount", transaction_amount);
+    console.log("[AxPay] login Content-Type: application/x-www-form-urlencoded (AXPAY_USE_URLENCODED)");
+  } else {
+    const form = new FormData();
+    form.append("token", String(AXPAY_TOKEN));
+    form.append("user_id", user_id);
+    form.append("type", type);
+    form.append("money", money);
+    form.append("wallet_car_number", wallet_car_number);
+    form.append("wallet_bank", wallet_bank);
+    form.append("wallet_name", wallet_name);
+    form.append("transaction_amount", transaction_amount);
+    body = form;
+  }
+
+  const formLog: Record<string, string> = {
+    token: "[SET]",
+    user_id,
+    type,
+    money,
+    wallet_car_number,
+    wallet_bank,
+    wallet_name,
+    transaction_amount,
+  };
+  console.log("[AxPay] login 요청 FormData:", formLog);
+
+  const curlParts = [
+    "curl -X POST",
+    `'${loginUrl}'`,
+    `-F 'token=YOUR_TOKEN'`,
+    `-F 'user_id=${user_id.replace(/'/g, "'\\''")}'`,
+    `-F 'type=${type}'`,
+    `-F 'money=${money}'`,
+    `-F 'wallet_car_number=${wallet_car_number.replace(/'/g, "'\\''")}'`,
+    `-F 'wallet_bank=${wallet_bank.replace(/'/g, "'\\''")}'`,
+    `-F 'wallet_name=${wallet_name.replace(/'/g, "'\\''")}'`,
+    `-F 'transaction_amount=${transaction_amount}'`,
+  ];
+  console.log("[AxPay] curl로 재현 (token만 채워서 실행):", curlParts.join(" \\\n  "));
 
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), AXPAY_TIMEOUT_MS);
     const res = await fetch(loginUrl, {
       method: "POST",
-      body: form,
+      body,
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
