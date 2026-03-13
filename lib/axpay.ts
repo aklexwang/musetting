@@ -35,20 +35,41 @@ export type AxPayLoginResult = {
  * multipart/form-data, transaction_amount 필드에 만 원 단위 금액(Integer) 전송.
  * 응답 data.url, data.order_id 반환 → 호출 측에서 Transaction 에 저장.
  */
+/** 가이드 3.1 필수 필드 8개: token, user_id, type, money, wallet_car_number, wallet_bank, wallet_name, transaction_amount (모두 String) */
 export async function login(params: AxPayLoginParams): Promise<AxPayLoginResult> {
   if (!AXPAY_TOKEN) {
     return { success: false, message: "AXPAY_TOKEN이 설정되지 않았습니다." };
   }
 
+  const user_id = String(params.username ?? "").trim();
+  const type = params.type === "BUY" ? "1" : "2";
+  const amountStr = params.amount != null && !Number.isNaN(Number(params.amount)) ? String(params.amount) : "";
+  const money = amountStr;
+  const wallet_car_number = String(params.accountNumber ?? "").trim();
+  const wallet_bank = String(params.bankName ?? "").trim();
+  const wallet_name = String(params.accountHolder ?? "").trim();
+  const transaction_amount = amountStr;
+
+  const missing: string[] = [];
+  if (!user_id) missing.push("user_id");
+  if (!money) missing.push("money");
+  if (!wallet_car_number) missing.push("wallet_car_number");
+  if (!wallet_bank) missing.push("wallet_bank");
+  if (!wallet_name) missing.push("wallet_name");
+  if (!transaction_amount) missing.push("transaction_amount");
+  if (missing.length > 0) {
+    return { success: false, message: `필수 필드가 비어 있거나 올바르지 않습니다: ${missing.join(", ")}` };
+  }
+
   const form = new FormData();
   form.append("token", String(AXPAY_TOKEN));
-  form.append("user_id", String(params.username));
-  form.append("type", params.type === "BUY" ? "1" : "2");
-  form.append("money", String(params.amount));
-  form.append("wallet_car_number", String(params.accountNumber));
-  form.append("wallet_bank", String(params.bankName));
-  form.append("wallet_name", String(params.accountHolder));
-  form.append("transaction_amount", String(params.amount));
+  form.append("user_id", user_id);
+  form.append("type", type);
+  form.append("money", money);
+  form.append("wallet_car_number", wallet_car_number);
+  form.append("wallet_bank", wallet_bank);
+  form.append("wallet_name", wallet_name);
+  form.append("transaction_amount", transaction_amount);
 
   const formLog: Record<string, string> = {};
   for (const [key, value] of form.entries()) {
