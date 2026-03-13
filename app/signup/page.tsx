@@ -89,6 +89,7 @@ export default function SignupPage() {
   const [pendingApproval, setPendingApproval] = useState(false);
   const [pendingUsername, setPendingUsername] = useState<string | null>(null);
   const [approved, setApproved] = useState(false);
+  const [rejected, setRejected] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const router = useRouter();
 
@@ -110,6 +111,12 @@ export default function SignupPage() {
           setTimeout(() => {
             router.replace("/login");
           }, 1500);
+        } else if (data.status === "REJECTED") {
+          if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+          }
+          setRejected(true);
         }
       } catch {
         // ignore
@@ -165,10 +172,14 @@ export default function SignupPage() {
           <CardHeader className="space-y-4 pb-4 pt-8 px-8 text-center">
             <div
               className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full ${
-                approved ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+                rejected ? "bg-red-500/20 text-red-400" : approved ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
               }`}
             >
-              {approved ? (
+              {rejected ? (
+                <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : approved ? (
                 <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
@@ -179,16 +190,26 @@ export default function SignupPage() {
               )}
             </div>
             <CardTitle className="text-xl font-semibold tracking-tight text-slate-50">
-              {approved ? "승인되었습니다." : "가입승인 대기중"}
+              {rejected ? "가입이 거부되었습니다." : approved ? "승인되었습니다." : "가입승인 대기중"}
             </CardTitle>
             <CardDescription className="text-slate-400 text-sm leading-relaxed">
-              {approved
-                ? "로그인 페이지로 이동합니다."
-                : "가입 요청이 완료되었습니다. 관리자 검토 후 승인되면 로그인하실 수 있습니다."}
+              {rejected
+                ? "관리자에 의해 가입 요청이 거절되었습니다."
+                : approved
+                  ? "로그인 페이지로 이동합니다."
+                  : "가입 요청이 완료되었습니다. 관리자 검토 후 승인되면 로그인하실 수 있습니다."}
             </CardDescription>
           </CardHeader>
           <CardContent className="px-8 pb-8 pt-0">
-            {approved ? (
+            {rejected ? (
+              <Button
+                type="button"
+                className="w-full bg-slate-600 hover:bg-slate-500 text-slate-100"
+                onClick={() => router.replace("/")}
+              >
+                확인
+              </Button>
+            ) : approved ? (
               <p className="text-center text-emerald-400/90 text-sm font-medium">
                 잠시 후 로그인 화면으로 이동합니다.
               </p>
@@ -225,9 +246,12 @@ export default function SignupPage() {
             className="space-y-5"
           >
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-slate-200">
-                아이디
-              </Label>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Label htmlFor="username" className="text-slate-200">
+                  아이디
+                </Label>
+                <span className="text-red-500 text-sm">BETEAST와 같은 회원아이디를 입력하세요.</span>
+              </div>
               <Controller
                 name="username"
                 control={control}

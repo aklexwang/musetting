@@ -403,12 +403,9 @@ export default function Home() {
               className="h-10 w-auto"
             />
             <CardTitle className="text-2xl font-semibold tracking-tight text-slate-50">
-              회원 로그인
+              AXPAY 로그인
             </CardTitle>
           </div>
-          <CardDescription className="text-slate-400 text-sm text-center">
-            BETEAST와 같은 회원아이디를 입력하세요.
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLoginSubmit} className="space-y-5">
