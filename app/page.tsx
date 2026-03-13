@@ -416,6 +416,7 @@ export default function Home() {
               <Input
                 id="username"
                 type="text"
+                autoComplete="off"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="아이디"
@@ -430,6 +431,7 @@ export default function Home() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="off"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="비밀번호"

@@ -108,9 +108,6 @@ export default function SignupPage() {
             pollRef.current = null;
           }
           setApproved(true);
-          setTimeout(() => {
-            router.replace("/login");
-          }, 1500);
         } else if (data.status === "REJECTED") {
           if (pollRef.current) {
             clearInterval(pollRef.current);
@@ -190,13 +187,13 @@ export default function SignupPage() {
               )}
             </div>
             <CardTitle className="text-xl font-semibold tracking-tight text-slate-50">
-              {rejected ? "가입이 거부되었습니다." : approved ? "승인되었습니다." : "가입승인 대기중"}
+              {rejected ? "가입이 거부되었습니다." : approved ? "가입이 승인되었습니다." : "가입승인 대기중"}
             </CardTitle>
             <CardDescription className="text-slate-400 text-sm leading-relaxed">
               {rejected
                 ? "관리자에 의해 가입 요청이 거절되었습니다."
                 : approved
-                  ? "로그인 페이지로 이동합니다."
+                  ? "로그인 화면에서 로그인하실 수 있습니다."
                   : "가입 요청이 완료되었습니다. 관리자 검토 후 승인되면 로그인하실 수 있습니다."}
             </CardDescription>
           </CardHeader>
@@ -210,9 +207,13 @@ export default function SignupPage() {
                 확인
               </Button>
             ) : approved ? (
-              <p className="text-center text-emerald-400/90 text-sm font-medium">
-                잠시 후 로그인 화면으로 이동합니다.
-              </p>
+              <Button
+                type="button"
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
+                onClick={() => router.replace("/")}
+              >
+                확인
+              </Button>
             ) : (
               <p className="text-center text-slate-400 text-sm">
                 승인 후 이 화면에서 자동으로 로그인 페이지로 이동합니다.
@@ -259,6 +260,7 @@ export default function SignupPage() {
                   <Input
                     id="username"
                     type="text"
+                    autoComplete="off"
                     placeholder="아이디를 입력하세요"
                     className="bg-slate-800/50 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-slate-500"
                     aria-invalid={!!errors.username}
@@ -284,6 +286,7 @@ export default function SignupPage() {
                   <Input
                     id="password"
                     type="password"
+                    autoComplete="new-password"
                     placeholder="6자 이상 입력하세요"
                     className="bg-slate-800/50 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-slate-500"
                     aria-invalid={!!errors.password}
@@ -313,6 +316,7 @@ export default function SignupPage() {
                   >
                     <SelectTrigger
                       id="bankName"
+                      autoComplete="off"
                       className="w-full border-slate-700 bg-slate-800/50 text-slate-100 focus:ring-slate-500 data-[placeholder]:text-slate-500"
                     >
                       <SelectValue placeholder="은행을 선택하세요" />
@@ -356,6 +360,7 @@ export default function SignupPage() {
                     id="accountNumber"
                     type="text"
                     inputMode="numeric"
+                    autoComplete="off"
                     placeholder="숫자만 입력하세요"
                     className="bg-slate-800/50 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-slate-500"
                     aria-invalid={!!errors.accountNumber}
@@ -385,6 +390,7 @@ export default function SignupPage() {
                   <Input
                     id="accountHolder"
                     type="text"
+                    autoComplete="off"
                     placeholder="예금주명을 입력하세요"
                     className="bg-slate-800/50 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-slate-500"
                     aria-invalid={!!errors.accountHolder}

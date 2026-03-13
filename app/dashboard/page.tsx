@@ -98,7 +98,8 @@ export default function DashboardPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data?.error ?? "신청에 실패했습니다.");
+        const raw = data?.error ?? "신청에 실패했습니다.";
+        setError(raw === "usage_exceeded" ? "호스팅 사용량 한도를 초과했습니다. 잠시 후 다시 시도하거나 관리자에게 문의하세요." : raw);
         return;
       }
       setAmount("");
@@ -197,6 +198,7 @@ export default function DashboardPage() {
                 id="amount"
                 type="text"
                 inputMode="numeric"
+                autoComplete="off"
                 placeholder="만 원 단위 (예: 10000, 20000)"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
