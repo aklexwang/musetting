@@ -141,7 +141,7 @@ export async function POST(request: Request) {
           const dateStr = txn.createdAt
             ? new Date(txn.createdAt).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
             : "";
-          const resultText = `✅ 승인되었습니다. (${typeLabel})\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${dateStr}`;
+          const resultText = `✅ ${typeLabel}승인\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${dateStr}`;
           await bot.answerCallbackQuery(queryId, { text: "승인되었습니다." });
           await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch((e) => {
             console.error("[webhook] editMessageText 실패:", e);
@@ -152,7 +152,16 @@ export async function POST(request: Request) {
             data: { status: "REJECTED" },
           });
           const typeLabel = txn.type === "BUY" ? "구매" : "판매";
-          const resultText = `❌ 거래 거절 (${typeLabel}).\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원`;
+          const rejectDateStr = txn.createdAt
+            ? (() => {
+                const d = new Date(txn.createdAt);
+                const ampm = d.getHours() < 12 ? "AM" : "PM";
+                const h = String(d.getHours() % 12 || 12).padStart(2, "0");
+                const min = String(d.getMinutes()).padStart(2, "0");
+                return `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, "0")}. ${String(d.getDate()).padStart(2, "0")}. ${ampm} ${h}:${min}`;
+              })()
+            : "";
+          const resultText = `❌ ${typeLabel} 승인 거절\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${rejectDateStr}`;
           await bot.answerCallbackQuery(queryId, { text: "거절되었습니다." });
           await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch(() => {});
         }
@@ -177,13 +186,20 @@ export async function POST(request: Request) {
         data: { status: newStatus },
       });
 
+      const formatSignupDate = (date: Date) => {
+        const d = new Date(date);
+        const ampm = d.getHours() < 12 ? "AM" : "PM";
+        const h = String(d.getHours() % 12 || 12).padStart(2, "0");
+        const min = String(d.getMinutes()).padStart(2, "0");
+        return `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, "0")}. ${String(d.getDate()).padStart(2, "0")}. ${ampm} ${h}:${min}`;
+      };
       const memberInfo = user
-        ? `\n회원 아이디: ${user.username}\n예금주: ${user.accountHolder}${user.createdAt ? `\n가입날짜: ${new Date(user.createdAt).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ""}`
+        ? `\n회원 아이디: ${user.username}\n예금주: ${user.accountHolder}${user.createdAt ? `\n가입날짜: ${formatSignupDate(user.createdAt)}` : ""}`
         : "";
       const resultText =
         action === "approve"
           ? `✅ 가입승인되었습니다.${memberInfo}`
-          : `❌ 거절되었습니다.${memberInfo}`;
+          : `❌ 회원거절${memberInfo}`;
       await bot.answerCallbackQuery(queryId, { text: resultText });
       await bot.editMessageText(resultText, {
         chat_id: chatId,
