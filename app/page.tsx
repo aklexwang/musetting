@@ -181,25 +181,21 @@ export default function Home() {
         />
         <p className="text-slate-400 text-sm">회원아이디 {user?.username ?? ""}</p>
         <div className="flex flex-col items-center gap-6 w-full max-w-xs">
-          <div className="w-full flex flex-col items-center gap-1">
-            <div className="w-full flex items-center justify-center gap-2">
-              <Input
+          <div className="w-full flex items-center justify-center">
+            <div className="flex items-center w-full max-w-[240px] rounded-md border border-slate-700 bg-slate-800/50 px-4 py-2.5 focus-within:ring-2 focus-within:ring-slate-500 focus-within:ring-offset-0 focus-within:ring-offset-slate-950">
+              <input
                 id="amount"
                 type="text"
                 inputMode="numeric"
                 placeholder="금액을 입력하세요"
-                value={amount}
+                value={amount ? Number(amount).toLocaleString("ko-KR") : ""}
                 onChange={(e) => {
                   const v = e.target.value.replace(/\D/g, "");
                   setAmount(v);
                 }}
-                className="bg-slate-800/50 border-slate-700 text-slate-100 placeholder:text-slate-500 text-center max-w-[180px]"
+                className="flex-1 min-w-0 bg-transparent text-slate-100 placeholder:text-slate-500 text-center text-sm outline-none"
               />
-              {amount ? (
-                <span className="text-slate-300 text-sm whitespace-nowrap">
-                  {Number(amount).toLocaleString("ko-KR")}원
-                </span>
-              ) : null}
+              <span className="text-slate-400 text-sm shrink-0 ml-1.5">원</span>
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-4">
