@@ -163,8 +163,7 @@ export default function Home() {
   if (user) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-8 p-4">
-        <div className="absolute top-4 right-4 flex items-center gap-2">
-          <span className="text-slate-400 text-sm">{user.username}</span>
+        <div className="absolute top-4 right-4">
           <Button
             variant="ghost"
             size="sm"
