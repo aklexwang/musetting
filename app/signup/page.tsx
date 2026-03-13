@@ -316,7 +316,6 @@ export default function SignupPage() {
                   >
                     <SelectTrigger
                       id="bankName"
-                      autoComplete="off"
                       className="w-full border-slate-700 bg-slate-800/50 text-slate-100 focus:ring-slate-500 data-[placeholder]:text-slate-500"
                     >
                       <SelectValue placeholder="은행을 선택하세요" />
