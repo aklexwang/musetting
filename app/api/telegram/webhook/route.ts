@@ -85,7 +85,7 @@ export async function POST(request: Request) {
               amount: txn.amount,
               type: txn.type as "BUY" | "SELL",
             });
-            console.log("[webhook] AxPay 결과:", result.success, result.message ?? "", result.url ? "url있음" : "url없음", result.order_id ?? "");
+            console.log("[webhook] AxPay 결과:", result.success ? "성공" : "실패", result.message ?? "", result.url ? "url수신" : "(url미수신)", result.order_id ?? "");
             await prisma.transaction.update({
               where: { id: txnId },
               data: {
