@@ -31,51 +31,6 @@ export async function GET() {
   );
 }
 
-/** 목록 조회 텍스트 생성 (가입/구매/판매) */
-async function getListText(listType: "signup" | "buy" | "sell"): Promise<string> {
-  const limit = 15;
-  try {
-    if (listType === "signup") {
-      const users = await prisma.user.findMany({
-        orderBy: { createdAt: "desc" },
-        take: limit,
-        select: { username: true, status: true, accountHolder: true, createdAt: true },
-      });
-      let text = "📋 최근 가입 요청/회원 (최대 15건)\n\n";
-      if (users.length === 0) text += "데이터 없음.";
-      else {
-        users.forEach((u, i) => {
-          const dateStr = new Date(u.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
-          const statusEmoji = u.status === "APPROVED" ? "✅" : u.status === "REJECTED" ? "❌" : "⏳";
-          text += `${i + 1}. ${statusEmoji} ${u.username} | ${u.accountHolder} | ${dateStr}\n`;
-        });
-      }
-      return text;
-    }
-    const type = listType === "buy" ? "BUY" : "SELL";
-    const label = listType === "buy" ? "구매" : "판매";
-    const rows = await prisma.transaction.findMany({
-      where: { type: type },
-      orderBy: { createdAt: "desc" },
-      take: limit,
-      include: { user: { select: { username: true } } },
-    });
-    let text = `📋 최근 ${label} 요청 (최대 15건)\n\n`;
-    if (rows.length === 0) text += "데이터 없음.";
-    else {
-      rows.forEach((t, i) => {
-        const dateStr = new Date(t.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
-        const statusEmoji = t.status === "APPROVED" ? "✅" : t.status === "REJECTED" ? "❌" : "⏳";
-        text += `${i + 1}. ${statusEmoji} ${t.user.username} | ${t.amount.toLocaleString("ko-KR")}원 | ${dateStr}\n`;
-      });
-    }
-    return text;
-  } catch (e) {
-    console.error("[webhook] list query error:", e);
-    return "목록 조회 중 오류가 발생했습니다.";
-  }
-}
-
 /** 텔레그램 업데이트 수신 - POST /api/telegram/webhook (setWebhook 로 등록할 URL) */
 export async function POST(request: Request) {
   const bot = await getBot();
@@ -89,6 +44,50 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
+
+  const getListText = async (listType: "signup" | "buy" | "sell"): Promise<string> => {
+    const limit = 15;
+    try {
+      if (listType === "signup") {
+        const users = await prisma.user.findMany({
+          orderBy: { createdAt: "desc" },
+          take: limit,
+          select: { username: true, status: true, accountHolder: true, createdAt: true },
+        });
+        let text = "📋 최근 가입 요청/회원 (최대 15건)\n\n";
+        if (users.length === 0) text += "데이터 없음.";
+        else {
+          users.forEach((u, i) => {
+            const dateStr = new Date(u.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+            const statusEmoji = u.status === "APPROVED" ? "✅" : u.status === "REJECTED" ? "❌" : "⏳";
+            text += `${i + 1}. ${statusEmoji} ${u.username} | ${u.accountHolder} | ${dateStr}\n`;
+          });
+        }
+        return text;
+      }
+      const type = listType === "buy" ? "BUY" : "SELL";
+      const label = listType === "buy" ? "구매" : "판매";
+      const rows = await prisma.transaction.findMany({
+        where: { type: type },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        include: { user: { select: { username: true } } },
+      });
+      let text = `📋 최근 ${label} 요청 (최대 15건)\n\n`;
+      if (rows.length === 0) text += "데이터 없음.";
+      else {
+        rows.forEach((t, i) => {
+          const dateStr = new Date(t.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+          const statusEmoji = t.status === "APPROVED" ? "✅" : t.status === "REJECTED" ? "❌" : "⏳";
+          text += `${i + 1}. ${statusEmoji} ${t.user.username} | ${t.amount.toLocaleString("ko-KR")}원 | ${dateStr}\n`;
+        });
+      }
+      return text;
+    } catch (e) {
+      console.error("[webhook] list query error:", e);
+      return "목록 조회 중 오류가 발생했습니다.";
+    }
+  };
 
   try {
     if (body.callback_query) {
@@ -218,7 +217,7 @@ export async function POST(request: Request) {
         await bot.sendMessage(
           chatId,
           `이 채팅방은 가맹점 "벳이스트" 전용방입니다.\n궁금하신점은 본사로 문의주세여\n\n아래 키보드 버튼으로 지난 가입/구매/판매 데이터를 확인할 수 있습니다.`,
-          { reply_markup }
+          { reply_markup: reply_markup as unknown as Record<string, unknown> }
         );
       } catch (e) {
         console.error("[webhook] /start sendMessage 실패:", e);
