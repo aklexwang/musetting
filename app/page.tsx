@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -35,6 +35,14 @@ export default function Home() {
   const [confirmMode, setConfirmMode] = useState<"buy" | "sell" | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [confirmChecked, setConfirmChecked] = useState(false);
+  /** 신청 후 텔레그램 승인 대기 중인 거래 id (승인되면 검색 중 화면으로) */
+  const [pendingTxnId, setPendingTxnId] = useState<string | null>(null);
+  const [pendingTxnAmount, setPendingTxnAmount] = useState(0);
+  const [pendingTxnType, setPendingTxnType] = useState<"buy" | "sell" | null>(null);
+  /** 승인됨 → 검색 중(스캔) 화면 표시 */
+  const [showScanning, setShowScanning] = useState(false);
+  const [rejectedMessage, setRejectedMessage] = useState<string | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -135,20 +143,17 @@ export default function Home() {
         alert(msg);
         return;
       }
-      const formatted = parsedAmount.toLocaleString("ko-KR");
-      const msg =
-        confirmMode === "buy"
-          ? `${formatted}원 구매 요청이 완료되었습니다. 가맹점 승인 후 대시보드에서 확인하세요.`
-          : `${formatted}원 판매 요청이 완료되었습니다. 가맹점 승인 후 대시보드에서 확인하세요.`;
-      if (data?.telegramSent === false) {
-        alert(`${msg}\n\n(텔레그램 알림이 전송되지 않았을 수 있습니다. 관리자는 어드민 페이지에서 확인하세요.)`);
+      const txn = data?.transaction;
+      if (txn?.id) {
+        setPendingTxnId(txn.id);
+        setPendingTxnAmount(parsedAmount);
+        setPendingTxnType(confirmMode);
       } else {
-        alert(msg);
+        setConfirmOpen(false);
+        setConfirmMode(null);
+        setAmount("");
+        window.location.href = "/dashboard";
       }
-      setConfirmOpen(false);
-      setConfirmMode(null);
-      setAmount("");
-      window.location.href = "/dashboard";
     } catch {
       alert("네트워크 오류가 발생했습니다.");
     } finally {
@@ -156,10 +161,117 @@ export default function Home() {
     }
   };
 
+  // 텔레그램 승인 대기 폴링: 승인 시 검색 중 화면, 거절 시 메시지
+  useEffect(() => {
+    if (!pendingTxnId) return;
+    const poll = async () => {
+      try {
+        const res = await fetch("/api/transactions", { credentials: "include" });
+        if (!res.ok) return;
+        const data = await res.json().catch(() => ({}));
+        const list = data?.transactions ?? [];
+        const txn = list.find((t: { id: string }) => t.id === pendingTxnId);
+        if (!txn) return;
+        if (txn.status === "APPROVED") {
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+          setPendingTxnId(null);
+          setConfirmOpen(false);
+          setConfirmMode(null);
+          setAmount("");
+          setShowScanning(true);
+        } else if (txn.status === "REJECTED") {
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+          setPendingTxnId(null);
+          setConfirmOpen(false);
+          setRejectedMessage("거래가 거절되었습니다.");
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    poll();
+    pollIntervalRef.current = setInterval(poll, 2500);
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
+  }, [pendingTxnId]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <p className="text-slate-400">로딩 중...</p>
+      </div>
+    );
+  }
+
+  // 검색 중 화면용 실시간 시계
+  const [scanTime, setScanTime] = useState("");
+  useEffect(() => {
+    if (!showScanning) return;
+    const tick = () => {
+      const now = new Date();
+      setScanTime(`${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [showScanning]);
+
+  // 승인 후 검색 중 화면 (사진2 스타일)
+  if (user && showScanning) {
+    const isSell = pendingTxnType === "sell";
+    const searchLabel = isSell ? "구매자를 검색하는 중입니다..." : "판매자를 검색하는 중입니다...";
+    const timeStr = scanTime || "0:00";
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex flex-col items-center justify-center p-4 text-slate-100">
+        <div className="w-full max-w-sm rounded-2xl bg-slate-900/80 border border-slate-700 p-6 space-y-6">
+          <p className="text-slate-400 text-sm">회원아이디 {user.username}</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-xl bg-slate-800/80 border border-slate-600 p-4">
+              <p className="text-slate-400 text-xs mb-1">{isSell ? "판매금액" : "구매금액"}</p>
+              <p className="text-cyan-400 font-mono text-lg font-semibold drop-shadow-[0_0_8px_rgba(34,211,238,0.4)]">
+                {pendingTxnAmount.toLocaleString("ko-KR")}원
+              </p>
+            </div>
+            <div className="rounded-xl bg-slate-800/80 border border-slate-600 p-4">
+              <p className="text-slate-400 text-xs mb-1">남은금액</p>
+              <p className="text-cyan-400 font-mono text-lg font-semibold drop-shadow-[0_0_8px_rgba(34,211,238,0.4)]">
+                {pendingTxnAmount.toLocaleString("ko-KR")}원
+              </p>
+            </div>
+          </div>
+          <p className="text-4xl font-mono text-cyan-400/90 drop-shadow-[0_0_12px_rgba(34,211,238,0.5)] tabular-nums">
+            {timeStr}
+          </p>
+          <p className="text-slate-300 text-center text-sm">{searchLabel}</p>
+          {/* 스캔 그리드 애니메이션 */}
+          <div className="grid grid-cols-6 grid-rows-4 gap-1">
+            {Array.from({ length: 24 }, (_, i) => (
+              <div
+                key={i}
+                className="h-3 rounded-sm bg-gradient-to-b from-cyan-500/30 to-fuchsia-500/30 animate-pulse"
+                style={{ animationDelay: `${i * 50}ms` }}
+              />
+            ))}
+          </div>
+          <p className="text-center font-mono text-cyan-400/80 text-sm tracking-widest">SCANNING...</p>
+          <Button
+            type="button"
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium"
+            onClick={() => {
+              setShowScanning(false);
+              window.location.href = "/dashboard";
+            }}
+          >
+            대시보드로 이동
+          </Button>
+        </div>
       </div>
     );
   }
@@ -177,6 +289,14 @@ export default function Home() {
             로그아웃
           </Button>
         </div>
+        {rejectedMessage && (
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg bg-red-900/80 text-red-200 text-sm border border-red-700">
+            {rejectedMessage}
+            <button type="button" className="ml-2 underline" onClick={() => setRejectedMessage(null)}>
+              닫기
+            </button>
+          </div>
+        )}
         <img
           src="https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_200,h_42,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png"
           srcSet="https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_200,h_42,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png 1x, https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_274,h_58,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png 2x"
@@ -221,7 +341,12 @@ export default function Home() {
           </div>
         </div>
 
-        <Dialog open={confirmOpen} onOpenChange={(open) => !open && setConfirmOpen(false)}>
+        <Dialog
+          open={confirmOpen}
+          onOpenChange={(open) => {
+            if (!open && !pendingTxnId) setConfirmOpen(false);
+          }}
+        >
           <DialogContent className="bg-slate-900 border-slate-700 text-slate-100 rounded-xl shadow-2xl max-w-[340px]">
             <DialogHeader className="pb-2">
               <DialogTitle className="text-slate-50 text-lg font-semibold">
@@ -256,7 +381,7 @@ export default function Home() {
               </Button>
               <Button
                 type="button"
-                className="flex-1 bg-slate-600 hover:bg-slate-500 text-white border border-slate-500"
+                className={`flex-1 text-white border ${confirmChecked ? "bg-emerald-600 hover:bg-emerald-500 border-emerald-600" : "bg-slate-600 hover:bg-slate-500 border-slate-500"}`}
                 onClick={handleConfirmSubmit}
                 disabled={confirmLoading || !confirmChecked}
               >
