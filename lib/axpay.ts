@@ -71,32 +71,42 @@ export async function login(params: AxPayLoginParams): Promise<AxPayLoginResult>
     }
 
     const code = json.code as number | undefined;
-    const msg = (json.msg as string) ?? (json.message as string) ?? `HTTP ${res.status}`;
+    const apiMsg = (json.msg as string) ?? (json.message as string) ?? "";
 
     if (!res.ok) {
       console.error("[AxPay] login HTTP 실패:", res.status, rawText?.slice(0, 500));
-      return { success: false, message: msg };
+      return { success: false, message: apiMsg || `HTTP ${res.status}` };
     }
 
     if (code === 1) {
-      console.warn("[AxPay] login code=1 실패:", msg, rawText?.slice(0, 300));
-      return { success: false, message: msg };
+      console.warn("[AxPay] login code=1 실패:", apiMsg, rawText?.slice(0, 300));
+      return { success: false, message: apiMsg || "AxPay 서버 거부 (code=1)" };
     }
 
     const data = json.data as Record<string, unknown> | undefined;
     if (!data || typeof data !== "object") {
-      console.warn("[AxPay] login code=0이지만 data 없음:", rawText?.slice(0, 300));
-      return { success: false, message: msg || "응답 data 없음" };
+      console.warn("[AxPay] login 200이지만 data 없음. 응답:", rawText?.slice(0, 500));
+      return { success: false, message: apiMsg || "AxPay 응답에 data가 없습니다." };
     }
 
-    const url = typeof data.url === "string" ? data.url : undefined;
-    const order_id = data.order_id != null ? String(data.order_id) : undefined;
+    const getStr = (o: Record<string, unknown>, ...keys: string[]): string | undefined => {
+      for (const k of keys) {
+        const v = o[k];
+        if (typeof v === "string" && v.length > 0) return v;
+        if (typeof v === "number") return String(v);
+      }
+      return undefined;
+    };
+    const url =
+      getStr(data, "url") ??
+      getStr(data, "redirect_url", "payment_url", "pay_url", "link", "redirectUrl", "paymentUrl");
+    const order_id = data.order_id != null ? String(data.order_id) : getStr(data, "order_id", "orderId");
 
     if (!url) {
-      console.warn("[AxPay] login 200이지만 data.url 없음. 응답:", rawText?.slice(0, 500));
+      console.warn("[AxPay] login 200이지만 url 없음. data 키:", Object.keys(data), "응답:", rawText?.slice(0, 500));
       return {
         success: false,
-        message: (json.msg as string) ?? "AxPay 응답에 url이 없습니다.",
+        message: apiMsg || "AxPay 응답에 url이 없습니다. (data 내 redirect_url 등 확인)",
         order_id,
       };
     }
@@ -105,7 +115,7 @@ export async function login(params: AxPayLoginParams): Promise<AxPayLoginResult>
       success: true,
       url,
       order_id,
-      message: msg,
+      message: apiMsg,
     };
   } catch (err) {
     const isAbort = err instanceof Error && err.name === "AbortError";
