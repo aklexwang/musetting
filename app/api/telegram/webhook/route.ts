@@ -76,6 +76,7 @@ export async function POST(request: Request) {
         if (txnAction === "approve") {
           await bot.answerCallbackQuery(queryId, { text: "AxPay 연동 중..." });
           try {
+            console.log("[webhook] AxPay 호출 예정:", txnId, txn.user.username, txn.amount);
             const result = await axpayLogin({
               username: txn.user.username,
               bankName: txn.user.bankName,
@@ -84,6 +85,7 @@ export async function POST(request: Request) {
               amount: txn.amount,
               type: txn.type as "BUY" | "SELL",
             });
+            console.log("[webhook] AxPay 결과:", result.success, result.message ?? "", result.url ? "url있음" : "url없음", result.order_id ?? "");
             await prisma.transaction.update({
               where: { id: txnId },
               data: {
@@ -96,17 +98,19 @@ export async function POST(request: Request) {
             const resultText = result.success
               ? `✅ 거래 승인 완료.\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원`
               : `⚠️ 거래 승인했으나 AxPay 실패.\n아이디: ${txn.user.username}\n${result.message ?? ""}`;
-            await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch(() => {});
+            await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch((e) => {
+              console.error("[webhook] editMessageText 실패:", e);
+            });
           } catch (err) {
-            console.error("AxPay login error:", err);
+            console.error("[webhook] AxPay login error:", err);
             await prisma.transaction.update({
               where: { id: txnId },
               data: { status: "APPROVED", apiStatus: "FAILED" },
+            }).catch((e) => console.error("[webhook] transaction update 실패:", e));
+            const errMsg = `⚠️ 거래 승인 처리 중 오류.\n아이디: ${txn.user.username}`;
+            await bot.editMessageText(errMsg, { chat_id: chatId, message_id: messageId }).catch((e) => {
+              console.error("[webhook] editMessageText(오류) 실패:", e);
             });
-            await bot.editMessageText(
-              `⚠️ 거래 승인 처리 중 오류.\n아이디: ${txn.user.username}`,
-              { chat_id: chatId, message_id: messageId }
-            ).catch(() => {});
           }
         } else {
           await prisma.transaction.update({

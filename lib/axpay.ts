@@ -46,17 +46,29 @@ export async function login(params: AxPayLoginParams): Promise<AxPayLoginResult>
 
   const base = AXPAY_BASE_URL.replace(/\/$/, "");
   const loginUrl = `${base}/api/index/login`;
+  const AXPAY_TIMEOUT_MS = 15000;
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), AXPAY_TIMEOUT_MS);
     const res = await fetch(loginUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${AXPAY_TOKEN}`,
       },
       body: form,
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
-    const json = (await res.json().catch(() => ({}))) as {
+    const rawText = await res.text();
+    const json = (() => {
+      try {
+        return JSON.parse(rawText) as Record<string, unknown>;
+      } catch {
+        return {};
+      }
+    })() as {
       data?: { url?: string; order_id?: string };
       url?: string;
       order_id?: string;
@@ -65,25 +77,38 @@ export async function login(params: AxPayLoginParams): Promise<AxPayLoginResult>
     };
 
     if (!res.ok) {
-      return {
-        success: false,
-        message: json?.message ?? `HTTP ${res.status}`,
-      };
+      const msg = (json as { message?: string }).message ?? `HTTP ${res.status}`;
+      console.error("[AxPay] login 실패:", res.status, rawText?.slice(0, 500));
+      return { success: false, message: msg };
     }
 
-    const data = json?.data ?? json;
+    const data = (json?.data ?? json) as { url?: string; order_id?: string };
     const url = typeof data?.url === "string" ? data.url : undefined;
     const order_id =
       data?.order_id != null ? String(data.order_id) : undefined;
+
+    if (!url) {
+      console.warn("[AxPay] login 200이지만 url 없음. 응답:", rawText?.slice(0, 500));
+      return {
+        success: false,
+        message: "AxPay 응답에 url이 없습니다. API 형식을 확인하세요.",
+        order_id,
+      };
+    }
 
     return {
       success: true,
       url,
       order_id,
-      message: json?.message,
+      message: (json as { message?: string }).message,
     };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const isAbort = err instanceof Error && err.name === "AbortError";
+    const message = isAbort
+      ? "AxPay 요청 시간 초과(15초). 서버 상태를 확인하세요."
+      : err instanceof Error
+        ? err.message
+        : String(err);
     console.error("AxPay login error:", err);
     return { success: false, message };
   }
