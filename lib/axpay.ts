@@ -117,11 +117,19 @@ export async function login(params: AxPayLoginParams): Promise<AxPayLoginResult>
   ];
   console.log("[AxPay] curl로 재현 (token만 채워서 실행):", curlParts.join(" \\\n  "));
 
+  const headers: Record<string, string> = {};
+  if (process.env.AXPAY_POSTMAN_UA === "true" || process.env.AXPAY_POSTMAN_UA === "1") {
+    headers["User-Agent"] = "PostmanRuntime/7.32.3";
+    headers["Accept"] = "*/*";
+    console.log("[AxPay] login Postman UA 모드");
+  }
+
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), AXPAY_TIMEOUT_MS);
     const res = await fetch(loginUrl, {
       method: "POST",
+      headers: Object.keys(headers).length ? headers : undefined,
       body,
       signal: controller.signal,
     });
