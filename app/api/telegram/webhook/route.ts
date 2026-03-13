@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import TelegramBot from "node-telegram-bot-api";
 import { prisma } from "@/lib/prisma";
-import { login as axpayLogin } from "@/lib/axpay";
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const bot = token ? new TelegramBot(token, { polling: false }) : null;
@@ -74,46 +73,14 @@ export async function POST(request: Request) {
         }
 
         if (txnAction === "approve") {
-          await bot.answerCallbackQuery(queryId, { text: "AxPay 연동 중..." });
-          try {
-            console.log("[webhook] AxPay 호출 예정:", txnId, txn.user.username, txn.amount);
-            const result = await axpayLogin({
-              username: txn.user.username,
-              bankName: txn.user.bankName,
-              accountNumber: txn.user.accountNumber,
-              accountHolder: txn.user.accountHolder,
-              amount: txn.amount,
-              type: txn.type as "BUY" | "SELL",
-            });
-            console.log("[webhook] AxPay 결과:", result.success ? "성공" : "실패", result.message ?? "", result.url ? "url수신" : "(url미수신)", result.order_id ?? "");
-            await prisma.transaction.update({
-              where: { id: txnId },
-              data: {
-                status: "APPROVED",
-                apiStatus: result.success ? "IDLE" : "FAILED",
-                axpayOrderId: result.order_id ?? null,
-                axpayUrl: result.url ?? null,
-              },
-            });
-            const typeLabel = txn.type === "BUY" ? "구매" : "판매";
-            const resultText = result.success
-              ? `✅ 거래 승인 완료 (${typeLabel}).\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원`
-              : `⚠️ 거래 승인했으나 AxPay 실패 (${typeLabel}).\n아이디: ${txn.user.username}\n${result.message ?? ""}${result.rawResponse ? "\n" + result.rawResponse : ""}`;
-            await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch((e) => {
-              console.error("[webhook] editMessageText 실패:", e);
-            });
-          } catch (err) {
-            console.error("[webhook] AxPay login error:", err);
-            await prisma.transaction.update({
-              where: { id: txnId },
-              data: { status: "APPROVED", apiStatus: "FAILED" },
-            }).catch((e) => console.error("[webhook] transaction update 실패:", e));
-            const typeLabel = txn.type === "BUY" ? "구매" : "판매";
-            const errMsg = `⚠️ 거래 승인 처리 중 오류 (${typeLabel}).\n아이디: ${txn.user.username}`;
-            await bot.editMessageText(errMsg, { chat_id: chatId, message_id: messageId }).catch((e) => {
-              console.error("[webhook] editMessageText(오류) 실패:", e);
-            });
-          }
+          await prisma.transaction.update({
+            where: { id: txnId },
+            data: { status: "APPROVED" },
+          });
+          await bot.answerCallbackQuery(queryId, { text: "승인되었습니다." });
+          await bot.editMessageText("승인되었습니다.", { chat_id: chatId, message_id: messageId }).catch((e) => {
+            console.error("[webhook] editMessageText 실패:", e);
+          });
         } else {
           await prisma.transaction.update({
             where: { id: txnId },

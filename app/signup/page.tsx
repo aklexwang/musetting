@@ -207,12 +207,17 @@ export default function SignupPage() {
     <div className="min-h-screen w-full bg-slate-950 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-slate-900/95 border-slate-800 ring-1 ring-slate-800 shadow-2xl shadow-black/30">
         <CardHeader className="space-y-1.5 pb-6">
-          <CardTitle className="text-2xl font-semibold tracking-tight text-slate-50 font-[var(--font-geist-sans),system-ui,sans-serif]">
-            가맹점 파트너 가입
-          </CardTitle>
-          <CardDescription className="text-slate-400 text-sm">
-            정산 계좌 정보를 입력해 주시면 검토 후 연락드립니다.
-          </CardDescription>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <img
+              src="https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_200,h_42,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png"
+              srcSet="https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_200,h_42,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png 1x, https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_274,h_58,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png 2x"
+              alt="BETEAST"
+              className="h-10 w-auto"
+            />
+            <CardTitle className="text-2xl font-semibold tracking-tight text-slate-50 font-[var(--font-geist-sans),system-ui,sans-serif]">
+              AXPAY 회원가입
+            </CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           <form
