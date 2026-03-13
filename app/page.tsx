@@ -191,6 +191,7 @@ export default function Home() {
                 id="amount"
                 type="text"
                 inputMode="numeric"
+                autoComplete="off"
                 placeholder="금액을 입력하세요"
                 value={amount ? Number(amount).toLocaleString("ko-KR") : ""}
                 onChange={(e) => {
@@ -244,18 +245,18 @@ export default function Home() {
                 </span>
               </label>
             </div>
-            <DialogFooter className="flex gap-3 pt-4 border-t border-slate-700/80">
+            <DialogFooter className="flex gap-3 pt-4 border-t border-slate-600 bg-slate-800/60 -mx-6 -mb-6 px-6 pb-6 rounded-b-xl">
               <Button
                 type="button"
                 variant="outline"
-                className="flex-1 border-slate-500 bg-slate-700/80 text-slate-100 hover:bg-slate-600 hover:text-white hover:border-slate-500"
+                className="flex-1 border-slate-500 bg-slate-700/80 text-slate-100 hover:bg-slate-600 hover:text-white hover:border-slate-400"
                 onClick={() => setConfirmOpen(false)}
               >
                 취소
               </Button>
               <Button
                 type="button"
-                className={`flex-1 ${confirmMode === "buy" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-sky-600 hover:bg-sky-500"} text-white`}
+                className="flex-1 bg-slate-600 hover:bg-slate-500 text-white border border-slate-500"
                 onClick={handleConfirmSubmit}
                 disabled={confirmLoading || !confirmChecked}
               >
