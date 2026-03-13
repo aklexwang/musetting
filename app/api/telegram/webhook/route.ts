@@ -77,8 +77,13 @@ export async function POST(request: Request) {
             where: { id: txnId },
             data: { status: "APPROVED" },
           });
+          const typeLabel = txn.type === "BUY" ? "구매" : "판매";
+          const dateStr = txn.createdAt
+            ? new Date(txn.createdAt).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+            : "";
+          const resultText = `✅ 승인되었습니다. (${typeLabel})\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${dateStr}`;
           await bot.answerCallbackQuery(queryId, { text: "승인되었습니다." });
-          await bot.editMessageText("승인되었습니다.", { chat_id: chatId, message_id: messageId }).catch((e) => {
+          await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch((e) => {
             console.error("[webhook] editMessageText 실패:", e);
           });
         } else {

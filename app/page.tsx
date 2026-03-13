@@ -121,6 +121,7 @@ export default function Home() {
 
   const handleConfirmSubmit = async () => {
     if (!confirmMode || !amountValid) return;
+    if (pendingTxnId) return;
     setConfirmLoading(true);
     try {
       const res = await fetch("/api/transactions", {
@@ -382,9 +383,9 @@ export default function Home() {
                 type="button"
                 className={`flex-1 text-white border ${confirmChecked ? "bg-emerald-600 hover:bg-emerald-500 border-emerald-600" : "bg-slate-600 hover:bg-slate-500 border-slate-500"}`}
                 onClick={handleConfirmSubmit}
-                disabled={confirmLoading || !confirmChecked}
+                disabled={confirmLoading || !confirmChecked || !!pendingTxnId}
               >
-                {confirmLoading ? "신청 중..." : "확인"}
+                {confirmLoading ? "신청 중..." : pendingTxnId ? "승인 대기 중..." : "확인"}
               </Button>
             </DialogFooter>
           </DialogContent>
