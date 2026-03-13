@@ -121,10 +121,13 @@ export default function Home() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        const raw = data?.error ?? "거래 신청에 실패했습니다.";
         const msg =
           res.status === 401
             ? "로그인이 필요합니다. 다시 로그인한 뒤 시도해 주세요."
-            : data?.error ?? "거래 신청에 실패했습니다.";
+            : raw === "usage_exceeded"
+              ? "호스팅 사용량 한도를 초과했습니다. 잠시 후 다시 시도하거나 관리자에게 문의하세요."
+              : raw;
         alert(msg);
         return;
       }
@@ -177,7 +180,7 @@ export default function Home() {
           alt="BETEAST"
           className="h-[42px] w-auto"
         />
-        <p className="text-slate-400 text-sm">승인된 회원입니다.</p>
+        <p className="text-slate-400 text-sm">회원아이디 {user?.username ?? ""} 승인된 회원입니다.</p>
         <div className="flex flex-col items-center gap-6 w-full max-w-xs">
           <div className="w-full">
             <Input
