@@ -57,6 +57,7 @@ export default function Home() {
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
@@ -111,6 +112,7 @@ export default function Home() {
     try {
       const res = await fetch("/api/transactions", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: confirmMode === "buy" ? "BUY" : "SELL",

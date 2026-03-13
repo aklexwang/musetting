@@ -42,7 +42,7 @@ export default function DashboardPage() {
   );
 
   const fetchSession = () =>
-    fetch("/api/auth/session")
+    fetch("/api/auth/session", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         setUser(data?.user ?? null);
@@ -54,7 +54,7 @@ export default function DashboardPage() {
       });
 
   const fetchTransactions = () =>
-    fetch("/api/transactions")
+    fetch("/api/transactions", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : { transactions: [] }))
       .then((data) => setTransactions(data.transactions ?? []))
       .catch(() => setTransactions([]));
@@ -92,6 +92,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch("/api/transactions", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type, amount: value }),
       });
