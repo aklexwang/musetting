@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcrypt";
+import TelegramBot from "node-telegram-bot-api";
 import { prisma } from "@/lib/prisma";
 
 const signupBodySchema = z.object({
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         username,
         password: hashedPassword,
@@ -63,8 +64,38 @@ export async function POST(request: Request) {
       },
     });
 
+    const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
+    const adminChatIdRaw = process.env.TELEGRAM_ADMIN_CHAT_ID?.trim();
+    if (token && adminChatIdRaw) {
+      const adminChatId = Number(adminChatIdRaw);
+      if (!Number.isNaN(adminChatId)) {
+        try {
+          const bot = new TelegramBot(token, { polling: false });
+          const text = [
+            `신규 가입 유저(아이디: ${user.username})가 우리 회원이 맞습니까?`,
+            ``,
+            `은행: ${user.bankName}`,
+            `계좌번호: ${user.accountNumber}`,
+            `예금주: ${user.accountHolder}`,
+          ].join("\n");
+          await bot.sendMessage(adminChatId, text, {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: "승인", callback_data: `approve:${user.id}` },
+                  { text: "거절", callback_data: `reject:${user.id}` },
+                ],
+              ],
+            },
+          });
+        } catch (err) {
+          console.warn("회원가입 후 텔레그램 발송 실패:", err);
+        }
+      }
+    }
+
     return NextResponse.json(
-      { message: "가입 요청이 완료되었습니다. 관리자 승인을 대기해 주세요." },
+      { message: "가입 요청이 완료되었습니다. 텔레그램에서 관리자 승인을 기다려 주세요." },
       { status: 201 }
     );
   } catch (err) {

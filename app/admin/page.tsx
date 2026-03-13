@@ -62,7 +62,6 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [txnLoading, setTxnLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [sendingTelegramId, setSendingTelegramId] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   const pendingCount = users.filter((u) => u.status === "PENDING").length;
@@ -146,25 +145,6 @@ export default function AdminPage() {
     updateUser(id, { canSell: checked });
   };
 
-  const handleSendTelegramVerification = async (userId: string) => {
-    setSendingTelegramId(userId);
-    try {
-      const res = await fetch(`/api/admin/users/${userId}/send-telegram-verification`, {
-        method: "POST",
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        alert(data?.error ?? "전송에 실패했습니다.");
-        return;
-      }
-      alert(data?.message ?? "텔레그램으로 확인 요청을 보냈습니다.");
-    } catch {
-      alert("네트워크 오류가 발생했습니다.");
-    } finally {
-      setSendingTelegramId(null);
-    }
-  };
-
   return (
     <div className="min-h-screen w-full bg-slate-950">
       <div className="container max-w-7xl mx-auto py-8 px-4">
@@ -187,7 +167,7 @@ export default function AdminPage() {
                   🔔
                 </span>
                 <p className="text-sm font-medium">
-                  승인 대기 중인 가입 요청이 <strong>{pendingCount}건</strong> 있습니다.
+                  가입 요청 <strong>{pendingCount}건</strong>이 텔레그램으로 전달되었습니다. 텔레그램에서 [승인]/[거절] 처리해 주세요.
                 </p>
               </div>
             )}
@@ -243,7 +223,6 @@ export default function AdminPage() {
                     <TableHead className="text-slate-300 font-medium">구매 권한</TableHead>
                     <TableHead className="text-slate-300 font-medium">판매 권한</TableHead>
                     <TableHead className="text-slate-300 font-medium">가입일</TableHead>
-                    <TableHead className="text-slate-300 font-medium">가맹점 확인</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -315,16 +294,6 @@ export default function AdminPage() {
                           month: "2-digit",
                           day: "2-digit",
                         })}
-                      </TableCell>
-                      <TableCell>
-                        <button
-                          type="button"
-                          onClick={() => handleSendTelegramVerification(user.id)}
-                          disabled={sendingTelegramId === user.id}
-                          className="px-2.5 py-1.5 rounded-md bg-sky-600 hover:bg-sky-500 text-white text-xs font-medium disabled:opacity-50 disabled:pointer-events-none"
-                        >
-                          {sendingTelegramId === user.id ? "전송 중..." : "가맹점 확인 요청"}
-                        </button>
                       </TableCell>
                     </TableRow>
                   ))}
