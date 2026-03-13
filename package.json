@@ -10,7 +10,8 @@
     "lint": "eslint",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "db:dev": "prisma dev"
+    "db:dev": "prisma dev",
+    "axpay:check-whitelist": "node scripts/check-axpay-whitelist.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
