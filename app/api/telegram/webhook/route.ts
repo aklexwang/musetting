@@ -195,18 +195,21 @@ export async function POST(request: Request) {
 
     if (body.message?.text === "/start") {
       const chatId = body.message.chat.id;
-      const keyboard = {
+      const reply_markup = {
         inline_keyboard: [
-          [
-            { text: "📋 가입", callback_data: "list:signup" },
-            { text: "📋 구매", callback_data: "list:buy" },
-            { text: "📋 판매", callback_data: "list:sell" },
-          ],
+          [{ text: "📋 가입", callback_data: "list:signup" }, { text: "📋 구매", callback_data: "list:buy" }, { text: "📋 판매", callback_data: "list:sell" }],
         ],
       };
-      await bot.sendMessage(chatId, `이 채팅방은 가맹점 "벳이스트" 전용방입니다.\n궁금하신점은 본사로 문의주세여\n\n아래 버튼으로 지난 가입/구매/판매 데이터를 확인할 수 있습니다.`, {
-        reply_markup: keyboard,
-      });
+      try {
+        await bot.sendMessage(
+          chatId,
+          `이 채팅방은 가맹점 "벳이스트" 전용방입니다.\n궁금하신점은 본사로 문의주세여\n\n아래 버튼으로 지난 가입/구매/판매 데이터를 확인할 수 있습니다.`,
+          { reply_markup }
+        );
+      } catch (e) {
+        console.error("[webhook] /start sendMessage 실패:", e);
+        await bot.sendMessage(chatId, `이 채팅방은 가맹점 "벳이스트" 전용방입니다.\n궁금하신점은 본사로 문의주세여`).catch(() => {});
+      }
       return NextResponse.json({ ok: true });
     }
   } catch (err) {
