@@ -77,12 +77,23 @@ async function main() {
       json = JSON.parse(text);
     } catch {}
 
-    const code = json.code;
-    const msg = (json.msg ?? json.message ?? "").trim().toLowerCase();
+    const isServerErrorHtml =
+      typeof text === "string" &&
+      (text.includes("Fatal error") || text.includes("think\\exception") || text.includes("Stack trace") || text.trimStart().startsWith("<"));
 
     console.log("HTTP 상태:", res.status);
     console.log("응답 본문:", text.slice(0, 500));
     console.log("");
+
+    if (isServerErrorHtml) {
+      console.log("[체크] AxPay 서버가 PHP Fatal error(HTML)를 반환했습니다.");
+      console.log("       요청은 서버까지 도달했으나, 서버 측 오류로 토큰/IP 화이트리스트 여부를 판단할 수 없습니다.");
+      console.log("       AxPay 측에 order_info API 오류(Undefined offset) 점검을 요청하세요.");
+      return;
+    }
+
+    const code = json.code;
+    const msg = (json.msg ?? json.message ?? "").trim().toLowerCase();
 
     if (msg.includes("token error") || msg.includes("tokenerror")) {
       console.log("[체크] token error! → 토큰 오류 (IP/토큰 확인 필요)");
