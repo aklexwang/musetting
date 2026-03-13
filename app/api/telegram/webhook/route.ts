@@ -136,7 +136,7 @@ export async function POST(request: Request) {
 
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { username: true, accountHolder: true },
+        select: { username: true, accountHolder: true, createdAt: true },
       });
 
       const newStatus = action === "approve" ? "APPROVED" : "REJECTED";
@@ -145,10 +145,12 @@ export async function POST(request: Request) {
         data: { status: newStatus },
       });
 
-      const memberInfo = user ? `\n회원 아이디: ${user.username}\n예금주: ${user.accountHolder}` : "";
+      const memberInfo = user
+        ? `\n회원 아이디: ${user.username}\n예금주: ${user.accountHolder}${user.createdAt ? `\n가입날짜: ${new Date(user.createdAt).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ""}`
+        : "";
       const resultText =
         action === "approve"
-          ? `✅ 승인되었습니다.${memberInfo}`
+          ? `✅ 가입승인되었습니다.${memberInfo}`
           : `❌ 거절되었습니다.${memberInfo}`;
       await bot.answerCallbackQuery(queryId, { text: resultText });
       await bot.editMessageText(resultText, {
