@@ -66,9 +66,16 @@ export async function POST(request: Request) {
 
     const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
     const adminChatIdRaw = process.env.TELEGRAM_ADMIN_CHAT_ID?.trim();
-    if (token && adminChatIdRaw) {
+    let telegramSent = false;
+    if (!token) {
+      console.warn("[signup] 텔레그램 미발송: TELEGRAM_BOT_TOKEN 없음");
+    } else if (!adminChatIdRaw) {
+      console.warn("[signup] 텔레그램 미발송: TELEGRAM_ADMIN_CHAT_ID 없음");
+    } else {
       const adminChatId = Number(adminChatIdRaw);
-      if (!Number.isNaN(adminChatId)) {
+      if (Number.isNaN(adminChatId)) {
+        console.warn("[signup] 텔레그램 미발송: TELEGRAM_ADMIN_CHAT_ID가 숫자가 아님", adminChatIdRaw);
+      } else {
         try {
           const bot = new TelegramBot(token, { polling: false });
           const text = [
@@ -88,14 +95,19 @@ export async function POST(request: Request) {
               ],
             },
           });
+          telegramSent = true;
+          console.log("[signup] 텔레그램 발송 성공:", user.username);
         } catch (err) {
-          console.warn("회원가입 후 텔레그램 발송 실패:", err);
+          console.error("[signup] 텔레그램 발송 실패:", err);
         }
       }
     }
 
     return NextResponse.json(
-      { message: "가입 요청이 완료되었습니다. 텔레그램에서 관리자 승인을 기다려 주세요." },
+      {
+        message: "가입 요청이 완료되었습니다. 텔레그램에서 관리자 승인을 기다려 주세요.",
+        telegramSent,
+      },
       { status: 201 }
     );
   } catch (err) {
