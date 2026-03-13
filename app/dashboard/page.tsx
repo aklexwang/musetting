@@ -126,9 +126,12 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-6 p-4">
       <div className="absolute top-4 right-4 flex items-center gap-2">
         <span className="text-slate-400 text-sm">{user.username}</span>
-        <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-300" asChild>
-          <Link href="/">홈</Link>
-        </Button>
+        <Link
+          href="/"
+          className="inline-flex items-center justify-center rounded-md text-sm font-medium text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 h-9 px-3"
+        >
+          홈
+        </Link>
       </div>
 
       {approvedWithUrl?.axpayUrl && (
