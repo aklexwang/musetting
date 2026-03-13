@@ -179,7 +179,7 @@ export default function Home() {
           alt="BETEAST"
           className="h-[42px] w-auto"
         />
-        <p className="text-slate-400 text-sm">회원아이디 {user?.username ?? ""} 승인된 회원입니다.</p>
+        <p className="text-slate-400 text-sm">회원아이디 {user?.username ?? ""}</p>
         <div className="flex flex-col items-center gap-6 w-full max-w-xs">
           <div className="w-full flex flex-col items-center gap-1">
             <div className="w-full flex items-center justify-center gap-2">
