@@ -43,6 +43,7 @@ export default function Home() {
   const [showScanning, setShowScanning] = useState(false);
   const [rejectedMessage, setRejectedMessage] = useState<string | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [scanTime, setScanTime] = useState("");
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -202,16 +203,6 @@ export default function Home() {
     };
   }, [pendingTxnId]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <p className="text-slate-400">로딩 중...</p>
-      </div>
-    );
-  }
-
-  // 검색 중 화면용 실시간 시계
-  const [scanTime, setScanTime] = useState("");
   useEffect(() => {
     if (!showScanning) return;
     const tick = () => {
@@ -222,6 +213,14 @@ export default function Home() {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [showScanning]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <p className="text-slate-400">로딩 중...</p>
+      </div>
+    );
+  }
 
   // 승인 후 검색 중 화면 (사진2 스타일)
   if (user && showScanning) {
