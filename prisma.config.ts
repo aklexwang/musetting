@@ -3,12 +3,22 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+function withSslMode(url: string): string {
+  try {
+    const u = new URL(url);
+    if (!u.searchParams.has("sslmode")) u.searchParams.set("sslmode", "verify-full");
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: process.env["DATABASE_URL"] ? withSslMode(process.env["DATABASE_URL"]) : undefined,
   },
 });

@@ -3,11 +3,24 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
+function normalizeDatabaseUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    if (!u.searchParams.has("sslmode")) {
+      u.searchParams.set("sslmode", "verify-full");
+    }
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
+  const raw = process.env.DATABASE_URL;
+  if (!raw) {
     throw new Error("DATABASE_URL is not set");
   }
+  const connectionString = normalizeDatabaseUrl(raw);
   const adapter = new PrismaPg({ connectionString });
   return new PrismaClient({ adapter });
 }
