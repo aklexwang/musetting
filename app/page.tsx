@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type User = { userId: string; username: string } | null;
 
@@ -33,6 +34,7 @@ export default function Home() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmMode, setConfirmMode] = useState<"buy" | "sell" | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [confirmChecked, setConfirmChecked] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -90,6 +92,7 @@ export default function Home() {
       return;
     }
     setConfirmMode("buy");
+    setConfirmChecked(false);
     setConfirmOpen(true);
   };
 
@@ -103,6 +106,7 @@ export default function Home() {
       return;
     }
     setConfirmMode("sell");
+    setConfirmChecked(false);
     setConfirmOpen(true);
   };
 
@@ -167,7 +171,7 @@ export default function Home() {
           <Button
             variant="ghost"
             size="sm"
-            className="text-slate-500 hover:text-slate-300"
+            className="text-red-500 border border-red-500 hover:text-red-400 hover:border-red-400 hover:bg-red-500/10"
             onClick={handleLogout}
           >
             로그아웃
@@ -217,31 +221,45 @@ export default function Home() {
         </div>
 
         <Dialog open={confirmOpen} onOpenChange={(open) => !open && setConfirmOpen(false)}>
-          <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
-            <DialogHeader>
-              <DialogTitle className="text-slate-50">
+          <DialogContent className="bg-slate-900 border-slate-700 text-slate-100 rounded-xl shadow-2xl max-w-[340px]">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-slate-50 text-lg font-semibold">
                 {confirmMode === "buy" ? "구매 확인" : "판매 확인"}
               </DialogTitle>
             </DialogHeader>
-            <p className="text-slate-300 text-sm py-2">
-              {confirmMode === "buy"
-                ? `${parsedAmount.toLocaleString("ko-KR")}원을 구매하시겠습니까?`
-                : `${parsedAmount.toLocaleString("ko-KR")}원을 판매하시겠습니까?`}
-            </p>
-            <DialogFooter className="gap-2 sm:gap-0">
+            <div className="space-y-4 py-2">
+              <p className="text-slate-200 text-base">
+                {confirmMode === "buy"
+                  ? `${parsedAmount.toLocaleString("ko-KR")}원을 구매하시겠습니까?`
+                  : `${parsedAmount.toLocaleString("ko-KR")}원을 판매하시겠습니까?`}
+              </p>
+              <label className="flex items-center gap-3 cursor-pointer select-none group">
+                <Checkbox
+                  checked={confirmChecked}
+                  onCheckedChange={(v) => setConfirmChecked(Boolean(v))}
+                  className="border-slate-500 data-[checked]:bg-emerald-600 data-[checked]:border-emerald-600 dark:data-[checked]:bg-emerald-600 dark:data-[checked]:border-emerald-600"
+                />
+                <span className="text-slate-300 text-sm group-hover:text-slate-200">
+                  금액 및 거래 내용을 확인하였습니다.
+                </span>
+              </label>
+            </div>
+            <DialogFooter className="flex gap-3 pt-4 border-t border-slate-700/80">
               <Button
+                type="button"
                 variant="outline"
-                className="border-slate-600 text-slate-200"
+                className="flex-1 border-slate-500 bg-slate-700/80 text-slate-100 hover:bg-slate-600 hover:text-white hover:border-slate-500"
                 onClick={() => setConfirmOpen(false)}
               >
                 취소
               </Button>
               <Button
-                className={confirmMode === "buy" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-sky-600 hover:bg-sky-500"}
+                type="button"
+                className={`flex-1 ${confirmMode === "buy" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-sky-600 hover:bg-sky-500"} text-white`}
                 onClick={handleConfirmSubmit}
-                disabled={confirmLoading}
+                disabled={confirmLoading || !confirmChecked}
               >
-                {confirmLoading ? "신청 중..." : "2차 확인"}
+                {confirmLoading ? "신청 중..." : "확인"}
               </Button>
             </DialogFooter>
           </DialogContent>
