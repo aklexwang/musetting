@@ -83,13 +83,8 @@ export async function login(params: AxPayLoginParams): Promise<AxPayLoginResult>
       return { success: false, message: apiMsg || "AxPay 서버 거부 (code=1)" };
     }
 
-    const data = json.data as Record<string, unknown> | undefined;
-    if (!data || typeof data !== "object") {
-      console.warn("[AxPay] login 200이지만 data 없음. 응답:", rawText?.slice(0, 500));
-      return { success: false, message: apiMsg || "AxPay 응답에 data가 없습니다." };
-    }
-
     const getStr = (o: Record<string, unknown>, ...keys: string[]): string | undefined => {
+      if (!o || typeof o !== "object") return undefined;
       for (const k of keys) {
         const v = o[k];
         if (typeof v === "string" && v.length > 0) return v;
@@ -97,16 +92,22 @@ export async function login(params: AxPayLoginParams): Promise<AxPayLoginResult>
       }
       return undefined;
     };
+
+    const data = json.data as Record<string, unknown> | undefined;
+    const root = json as Record<string, unknown>;
+    const urlKeys = ["url", "redirect_url", "payment_url", "pay_url", "link", "redirectUrl", "paymentUrl"];
     const url =
-      getStr(data, "url") ??
-      getStr(data, "redirect_url", "payment_url", "pay_url", "link", "redirectUrl", "paymentUrl");
-    const order_id = data.order_id != null ? String(data.order_id) : getStr(data, "order_id", "orderId");
+      (data && getStr(data, ...urlKeys)) ??
+      getStr(root, ...urlKeys);
+    const order_id =
+      (data && data.order_id != null ? String(data.order_id) : data && getStr(data, "order_id", "orderId")) ??
+      (root.order_id != null ? String(root.order_id) : getStr(root, "order_id", "orderId"));
 
     if (!url) {
-      console.warn("[AxPay] login 200이지만 url 없음. data 키:", Object.keys(data), "응답:", rawText?.slice(0, 500));
+      console.warn("[AxPay] login 200이지만 url 없음. 응답 키:", Object.keys(json), "data:", data ? Object.keys(data) : null, "raw:", rawText?.slice(0, 500));
       return {
         success: false,
-        message: apiMsg || "AxPay 응답에 url이 없습니다. (data 내 redirect_url 등 확인)",
+        message: apiMsg || "AxPay 응답에 data/url이 없습니다. (가이드: code 0 시 data.url 필요)",
         order_id,
       };
     }
