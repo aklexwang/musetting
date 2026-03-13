@@ -93,21 +93,36 @@ export async function login(params: AxPayLoginParams): Promise<AxPayLoginResult>
       return undefined;
     };
 
-    const data = json.data as Record<string, unknown> | undefined;
-    const root = json as Record<string, unknown>;
     const urlKeys = ["url", "redirect_url", "payment_url", "pay_url", "link", "redirectUrl", "paymentUrl"];
+    const data = json.data;
+    const result = json.result as Record<string, unknown> | undefined;
+    const root = json as Record<string, unknown>;
+
+    const fromObj = (o: Record<string, unknown> | undefined) => o && getStr(o, ...urlKeys);
     const url =
-      (data && getStr(data, ...urlKeys)) ??
+      fromObj(data as Record<string, unknown> | undefined) ??
+      (Array.isArray(data) && data[0] && typeof data[0] === "object" ? getStr(data[0] as Record<string, unknown>, ...urlKeys) : undefined) ??
+      fromObj(result) ??
+      (result?.data && typeof result.data === "object" ? getStr(result.data as Record<string, unknown>, ...urlKeys) : undefined) ??
       getStr(root, ...urlKeys);
+
+    const orderIdFrom = (o: unknown) => {
+      if (o == null || typeof o !== "object") return undefined;
+      const r = o as Record<string, unknown>;
+      if (r.order_id != null) return String(r.order_id);
+      return getStr(r, "order_id", "orderId");
+    };
     const order_id =
-      (data && data.order_id != null ? String(data.order_id) : data && getStr(data, "order_id", "orderId")) ??
-      (root.order_id != null ? String(root.order_id) : getStr(root, "order_id", "orderId"));
+      orderIdFrom(data) ??
+      (Array.isArray(data) && data[0] ? orderIdFrom(data[0]) : undefined) ??
+      orderIdFrom(result) ??
+      orderIdFrom(root);
 
     if (!url) {
-      console.warn("[AxPay] login 200이지만 url 없음. 응답 키:", Object.keys(json), "data:", data ? Object.keys(data) : null, "raw:", rawText?.slice(0, 500));
+      console.warn("[AxPay] login 200, url 없음. 전체 응답:", rawText?.slice(0, 800));
       return {
         success: false,
-        message: apiMsg || "AxPay 응답에 data/url이 없습니다. (가이드: code 0 시 data.url 필요)",
+        message: apiMsg || "AxPay 응답에 url이 없습니다. Netlify Functions 로그에서 응답 본문 확인 후 문의.",
         order_id,
       };
     }
