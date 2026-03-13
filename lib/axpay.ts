@@ -25,6 +25,8 @@ export type AxPayLoginResult = {
   url?: string;
   order_id?: string;
   message?: string;
+  /** 실패 시 디버깅용: AxPay 원본 응답 일부(텔레그램 등에 노출) */
+  rawResponse?: string;
 };
 
 /**
@@ -119,11 +121,13 @@ export async function login(params: AxPayLoginParams): Promise<AxPayLoginResult>
       orderIdFrom(root);
 
     if (!url) {
+      const snippet = rawText?.slice(0, 400) ?? "";
       console.warn("[AxPay] login 200, url 없음. 전체 응답:", rawText?.slice(0, 800));
       return {
         success: false,
-        message: apiMsg || "AxPay 응답에 url이 없습니다. Netlify Functions 로그에서 응답 본문 확인 후 문의.",
+        message: apiMsg || "AxPay 응답에 url이 없습니다.",
         order_id,
+        rawResponse: snippet ? `응답일부: ${snippet}` : undefined,
       };
     }
 

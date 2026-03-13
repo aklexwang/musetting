@@ -98,7 +98,7 @@ export async function POST(request: Request) {
             const typeLabel = txn.type === "BUY" ? "구매" : "판매";
             const resultText = result.success
               ? `✅ 거래 승인 완료 (${typeLabel}).\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원`
-              : `⚠️ 거래 승인했으나 AxPay 실패 (${typeLabel}).\n아이디: ${txn.user.username}\n${result.message ?? ""}`;
+              : `⚠️ 거래 승인했으나 AxPay 실패 (${typeLabel}).\n아이디: ${txn.user.username}\n${result.message ?? ""}${result.rawResponse ? "\n" + result.rawResponse : ""}`;
             await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch((e) => {
               console.error("[webhook] editMessageText 실패:", e);
             });
