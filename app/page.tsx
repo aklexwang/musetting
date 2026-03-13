@@ -182,19 +182,26 @@ export default function Home() {
         />
         <p className="text-slate-400 text-sm">회원아이디 {user?.username ?? ""} 승인된 회원입니다.</p>
         <div className="flex flex-col items-center gap-6 w-full max-w-xs">
-          <div className="w-full">
-            <Input
-              id="amount"
-              type="text"
-              inputMode="numeric"
-              placeholder="금액을 입력하세요"
-              value={amount}
-              onChange={(e) => {
-                const v = e.target.value.replace(/\D/g, "");
-                setAmount(v);
-              }}
-              className="bg-slate-800/50 border-slate-700 text-slate-100 placeholder:text-slate-500"
-            />
+          <div className="w-full flex flex-col items-center gap-1">
+            <div className="w-full flex items-center justify-center gap-2">
+              <Input
+                id="amount"
+                type="text"
+                inputMode="numeric"
+                placeholder="금액을 입력하세요"
+                value={amount}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, "");
+                  setAmount(v);
+                }}
+                className="bg-slate-800/50 border-slate-700 text-slate-100 placeholder:text-slate-500 text-center max-w-[180px]"
+              />
+              {amount ? (
+                <span className="text-slate-300 text-sm whitespace-nowrap">
+                  {Number(amount).toLocaleString("ko-KR")}원
+                </span>
+              ) : null}
+            </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-4">
             <Button
