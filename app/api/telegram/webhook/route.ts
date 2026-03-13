@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
-import TelegramBot from "node-telegram-bot-api";
 import { prisma } from "@/lib/prisma";
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const bot = token ? new TelegramBot(token, { polling: false }) : null;
+
+async function getBot() {
+  if (!token) return null;
+  const { default: TelegramBot } = await import("node-telegram-bot-api");
+  return new TelegramBot(token, { polling: false });
+}
 
 type TelegramUpdate = {
   update_id: number;
@@ -29,6 +33,7 @@ export async function GET() {
 
 /** 텔레그램 업데이트 수신 - POST /api/telegram/webhook (setWebhook 로 등록할 URL) */
 export async function POST(request: Request) {
+  const bot = await getBot();
   if (!bot) {
     return NextResponse.json({ ok: false }, { status: 503 });
   }
