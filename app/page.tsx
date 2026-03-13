@@ -264,12 +264,9 @@ export default function Home() {
           <Button
             type="button"
             className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium"
-            onClick={() => {
-              setShowScanning(false);
-              window.location.href = "/dashboard";
-            }}
+            onClick={() => setShowScanning(false)}
           >
-            대시보드로 이동
+            테스트버젼
           </Button>
         </div>
       </div>
