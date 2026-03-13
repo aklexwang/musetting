@@ -171,7 +171,7 @@ export default function Home() {
           <Button
             variant="ghost"
             size="sm"
-            className="text-red-500 border border-red-500 hover:text-red-400 hover:border-red-400 hover:bg-red-500/10"
+            className="text-slate-400 border border-slate-600 bg-slate-800/50 hover:text-slate-200 hover:border-slate-500 hover:bg-slate-700/80 rounded-md transition-colors"
             onClick={handleLogout}
           >
             로그아웃
