@@ -80,6 +80,7 @@ export default function AdminPage() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showPendingSignups, setShowPendingSignups] = useState(false);
   const [showPendingTxns, setShowPendingTxns] = useState(false);
+  const [deletingPending, setDeletingPending] = useState(false);
 
   const pendingUsers = users.filter((u) => u.status === "PENDING");
   const pendingCount = pendingUsers.length;
@@ -122,6 +123,26 @@ export default function AdminPage() {
       setTransactions([]);
     } finally {
       setTxnLoading(false);
+    }
+  };
+
+  const deletePendingUsers = async () => {
+    if (pendingCount === 0 || deletingPending) return;
+    if (!confirm(`가입 대기 ${pendingCount}건을 삭제할까요?`)) return;
+    setDeletingPending(true);
+    try {
+      const res = await fetch("/api/admin/users?status=PENDING", { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data?.error ?? "삭제에 실패했습니다.");
+        return;
+      }
+      alert(`가입 대기 ${data.deleted ?? 0}건이 삭제되었습니다.`);
+      await fetchUsers();
+    } catch {
+      alert("요청 중 오류가 발생했습니다.");
+    } finally {
+      setDeletingPending(false);
     }
   };
 
@@ -309,10 +330,20 @@ export default function AdminPage() {
             </Card>
 
             {pendingCount > 0 && !loading && (
-              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-amber-200/95 text-sm flex items-center gap-3">
-                <span className="text-amber-400">가입 요청 {pendingCount}건</span>
-                <span className="text-slate-400">·</span>
-                <span>텔레그램에서 [승인]/[거절] 처리해 주세요.</span>
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-amber-200/95 text-sm flex flex-wrap items-center justify-between gap-3">
+                <span className="flex items-center gap-3">
+                  <span className="text-amber-400">가입 요청 {pendingCount}건</span>
+                  <span className="text-slate-400">·</span>
+                  <span>텔레그램에서 [승인]/[거절] 처리해 주세요.</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={deletePendingUsers}
+                  disabled={deletingPending}
+                  className="shrink-0 rounded-lg bg-red-600/80 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-50"
+                >
+                  {deletingPending ? "삭제 중..." : "가입 대기 데이터 삭제"}
+                </button>
               </div>
             )}
             {pendingTxns.length > 0 && !txnLoading && (
