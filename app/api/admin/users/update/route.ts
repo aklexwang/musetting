@@ -8,6 +8,10 @@ const updateBodySchema = z.object({
   canBuy: z.boolean().optional(),
   canSell: z.boolean().optional(),
   suspended: z.boolean().optional(),
+  terminated: z.boolean().optional(),
+  bankName: z.string().optional(),
+  accountNumber: z.string().optional(),
+  accountHolder: z.string().optional(),
 });
 
 export async function PATCH(request: Request) {
@@ -29,6 +33,10 @@ export async function PATCH(request: Request) {
         ...(data.canBuy !== undefined && { canBuy: data.canBuy }),
         ...(data.canSell !== undefined && { canSell: data.canSell }),
         ...(data.suspended !== undefined && { suspended: data.suspended }),
+        ...(data.terminated !== undefined && { terminated: data.terminated }),
+        ...(data.bankName !== undefined && { bankName: data.bankName.trim() }),
+        ...(data.accountNumber !== undefined && { accountNumber: String(data.accountNumber).trim() }),
+        ...(data.accountHolder !== undefined && { accountHolder: data.accountHolder.trim() }),
       },
       select: {
         id: true,
@@ -37,6 +45,10 @@ export async function PATCH(request: Request) {
         canBuy: true,
         canSell: true,
         suspended: true,
+        terminated: true,
+        bankName: true,
+        accountNumber: true,
+        accountHolder: true,
       },
     });
 

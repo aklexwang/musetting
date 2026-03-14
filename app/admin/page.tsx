@@ -22,7 +22,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 type UserStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AdminMenu = "현황판" | "회원목록" | "구매" | "판매" | "계좌 변경";
@@ -38,6 +46,7 @@ interface AdminUser {
   canBuy: boolean;
   canSell: boolean;
   suspended: boolean;
+  terminated?: boolean;
   createdAt: string;
 }
 
@@ -72,6 +81,13 @@ const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
   { value: "REJECTED", label: "거절" },
 ];
 
+type AccountStatusValue = "NORMAL" | "SUSPENDED" | "TERMINATED";
+const ACCOUNT_STATUS_OPTIONS: { value: AccountStatusValue; label: string }[] = [
+  { value: "NORMAL", label: "정상" },
+  { value: "SUSPENDED", label: "정지" },
+  { value: "TERMINATED", label: "해지" },
+];
+
 const MENU_ITEMS: { id: AdminMenu; label: string }[] = [
   { id: "현황판", label: "현황판" },
   { id: "회원목록", label: "회원목록" },
@@ -96,6 +112,16 @@ export default function AdminPage() {
   const [accountChanges, setAccountChanges] = useState<AccountChangeRequestItem[]>([]);
   const [accountChangesLoading, setAccountChangesLoading] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  /** 회원 설정 모달: 선택된 회원 (열면 폼 초기화) */
+  const [settingsUser, setSettingsUser] = useState<AdminUser | null>(null);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsForm, setSettingsForm] = useState<{
+    status: UserStatus;
+    accountStatus: AccountStatusValue;
+    bankName: string;
+    accountNumber: string;
+    accountHolder: string;
+  }>({ status: "APPROVED", accountStatus: "NORMAL", bankName: "", accountNumber: "", accountHolder: "" });
 
   const pendingUsers = users.filter((u) => u.status === "PENDING");
   const approvedAndRejectedUsers = users.filter((u) => u.status === "APPROVED" || u.status === "REJECTED");
@@ -224,9 +250,30 @@ export default function AdminPage() {
     if (menu === "계좌 변경") fetchAccountChanges();
   }, [menu]);
 
+  useEffect(() => {
+    if (!settingsUser) return;
+    const accountStatus: AccountStatusValue = settingsUser.terminated ? "TERMINATED" : settingsUser.suspended ? "SUSPENDED" : "NORMAL";
+    setSettingsForm({
+      status: settingsUser.status,
+      accountStatus,
+      bankName: settingsUser.bankName ?? "",
+      accountNumber: settingsUser.accountNumber ?? "",
+      accountHolder: settingsUser.accountHolder ?? "",
+    });
+  }, [settingsUser]);
+
   const updateUser = async (
     id: string,
-    payload: { status?: UserStatus; canBuy?: boolean; canSell?: boolean; suspended?: boolean }
+    payload: {
+      status?: UserStatus;
+      canBuy?: boolean;
+      canSell?: boolean;
+      suspended?: boolean;
+      terminated?: boolean;
+      bankName?: string;
+      accountNumber?: string;
+      accountHolder?: string;
+    }
   ) => {
     setUpdatingId(id);
     try {
@@ -240,10 +287,31 @@ export default function AdminPage() {
       setUsers((prev) =>
         prev.map((u) => (u.id === id ? { ...u, ...updated } : u))
       );
+      return updated;
     } catch {
       // 네트워크 오류 시 조용히 처리
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const handleSettingsSave = async () => {
+    if (!settingsUser) return;
+    setSettingsSaving(true);
+    try {
+      const suspended = settingsForm.accountStatus === "SUSPENDED" || settingsForm.accountStatus === "TERMINATED";
+      const terminated = settingsForm.accountStatus === "TERMINATED";
+      await updateUser(settingsUser.id, {
+        status: settingsForm.status,
+        suspended,
+        terminated,
+        bankName: settingsForm.bankName.trim(),
+        accountNumber: settingsForm.accountNumber.trim(),
+        accountHolder: settingsForm.accountHolder.trim(),
+      });
+      setSettingsUser(null);
+    } finally {
+      setSettingsSaving(false);
     }
   };
 
@@ -674,7 +742,7 @@ export default function AdminPage() {
                             </span>
                           </TableCell>
                           <TableCell className="px-6 py-4 text-center text-sm text-slate-400">
-                            {user.suspended ? "이용정지" : "정상"}
+                            {user.terminated ? "해지" : user.suspended ? "이용정지" : "정상"}
                           </TableCell>
                           <TableCell className="text-slate-500 text-sm px-6 py-4 tabular-nums text-center">
                             {new Date(user.createdAt).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit", year: "numeric" })}
@@ -693,6 +761,7 @@ export default function AdminPage() {
                             <button
                               type="button"
                               className="h-7 px-2.5 text-sm font-medium text-slate-400 bg-slate-600/30 border border-slate-500/50 rounded-lg hover:bg-slate-600/60 hover:text-slate-200"
+                              onClick={() => setSettingsUser(user)}
                             >
                               설정
                             </button>
@@ -706,6 +775,104 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         )}
+
+        <Dialog open={!!settingsUser} onOpenChange={(open) => !open && setSettingsUser(null)}>
+          <DialogContent className="bg-slate-900 border-slate-700 text-slate-100 rounded-xl shadow-2xl max-w-[400px]">
+            <DialogHeader className="pb-4 border-b border-slate-700">
+              <DialogTitle className="text-slate-50 text-lg font-semibold">회원 설정</DialogTitle>
+            </DialogHeader>
+            {settingsUser && (
+              <div className="space-y-5 pt-4">
+                <div>
+                  <label className="block text-slate-400 text-sm font-medium mb-1.5">가입 상태</label>
+                  <Select
+                    value={settingsForm.status}
+                    onValueChange={(v) => setSettingsForm((f) => ({ ...f, status: v as UserStatus }))}
+                  >
+                    <SelectTrigger className="w-full h-10 rounded-lg border-slate-600 bg-slate-800 text-slate-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-700">
+                      {STATUS_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value} className="text-slate-200 focus:bg-slate-700">
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-slate-400 text-sm font-medium mb-1.5">상태</label>
+                  <Select
+                    value={settingsForm.accountStatus}
+                    onValueChange={(v) => setSettingsForm((f) => ({ ...f, accountStatus: v as AccountStatusValue }))}
+                  >
+                    <SelectTrigger className="w-full h-10 rounded-lg border-slate-600 bg-slate-800 text-slate-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-700">
+                      {ACCOUNT_STATUS_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value} className="text-slate-200 focus:bg-slate-700">
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="border-t border-slate-700 pt-4">
+                  <p className="text-slate-400 text-sm font-medium mb-3">계좌번호 변경</p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-slate-500 text-xs mb-1">은행명</label>
+                      <Input
+                        value={settingsForm.bankName}
+                        onChange={(e) => setSettingsForm((f) => ({ ...f, bankName: e.target.value }))}
+                        className="h-10 rounded-lg border-slate-600 bg-slate-800 text-slate-200"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-500 text-xs mb-1">계좌번호</label>
+                      <Input
+                        value={settingsForm.accountNumber}
+                        onChange={(e) => setSettingsForm((f) => ({ ...f, accountNumber: e.target.value }))}
+                        className="h-10 rounded-lg border-slate-600 bg-slate-800 text-slate-200"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-500 text-xs mb-1">예금주</label>
+                      <Input
+                        value={settingsForm.accountHolder}
+                        onChange={(e) => setSettingsForm((f) => ({ ...f, accountHolder: e.target.value }))}
+                        className="h-10 rounded-lg border-slate-600 bg-slate-800 text-slate-200"
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 border-slate-500 bg-slate-700/80 text-slate-200 hover:bg-slate-600"
+                    onClick={() => setSettingsUser(null)}
+                  >
+                    취소
+                  </Button>
+                  <Button
+                    type="button"
+                    className="flex-1 bg-blue-600 hover:bg-blue-500 text-white"
+                    onClick={handleSettingsSave}
+                    disabled={settingsSaving}
+                  >
+                    {settingsSaving ? "저장 중..." : "저장"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {menu === "구매" && (
           <>

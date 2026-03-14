@@ -16,24 +16,32 @@ export async function POST(request: Request) {
       );
     }
 
-    let user: { id: string; username: string; password: string; status: string; suspended?: boolean } | null;
+    let user: { id: string; username: string; password: string; status: string; suspended?: boolean; terminated?: boolean } | null;
     try {
       user = await prisma.user.findUnique({
         where: { username },
-        select: { id: true, username: true, password: true, status: true, suspended: true },
+        select: { id: true, username: true, password: true, status: true, suspended: true, terminated: true },
       });
     } catch {
       user = await prisma.user.findUnique({
         where: { username },
         select: { id: true, username: true, password: true, status: true },
       });
-      if (user) (user as { suspended?: boolean }).suspended = false;
+      if (user) (user as { suspended?: boolean; terminated?: boolean }).suspended = false;
+      if (user) (user as { suspended?: boolean; terminated?: boolean }).terminated = false;
     }
 
     if (!user) {
       return NextResponse.json(
         { error: "아이디 또는 비밀번호가 올바르지 않습니다." },
         { status: 401 }
+      );
+    }
+
+    if ((user as { terminated?: boolean }).terminated) {
+      return NextResponse.json(
+        { error: "계정이 해지되었습니다. BETEAST 관리자에게 문의하세요." },
+        { status: 403 }
       );
     }
 

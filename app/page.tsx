@@ -65,6 +65,8 @@ export default function Home() {
   const [showAccountChangeApproved, setShowAccountChangeApproved] = useState(false);
   /** 텔레그램에서 거부된 직후 → "승인 거부되었습니다." 표시 후 확인 시 일반 화면 */
   const [showAccountChangeRejected, setShowAccountChangeRejected] = useState(false);
+  /** 어드민에서 해지 처리된 경우 회원 페이지에 안내 표시 */
+  const [userTerminated, setUserTerminated] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -82,11 +84,23 @@ export default function Home() {
       setPendingAccountChange(false);
       setShowAccountChangeApproved(false);
       setShowAccountChangeRejected(false);
+      setUserTerminated(false);
       return;
     }
     fetch("/api/me", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setProfile(data ?? null))
+      .then((res) =>
+        res.json().then((data: Profile & { terminated?: boolean } | { error?: string; terminated?: boolean }) => {
+          if (!res.ok && res.status === 403 && (data as { terminated?: boolean }).terminated) {
+            setUserTerminated(true);
+            setProfile(null);
+          } else if (res.ok) {
+            setUserTerminated(false);
+            setProfile((data as Profile) ?? null);
+          } else {
+            setProfile(null);
+          }
+        })
+      )
       .catch(() => setProfile(null));
     fetch("/api/account-change-request", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : { hasPending: false }))
@@ -330,6 +344,24 @@ export default function Home() {
   }
 
   if (user) {
+    if (userTerminated) {
+      return (
+        <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center gap-6 p-4">
+          <p className="text-red-400 font-medium text-center">
+            계정이 해지되었습니다.
+            <br />
+            BETEAST 관리자에게 문의하세요.
+          </p>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="px-5 py-2.5 rounded-lg bg-slate-600 hover:bg-slate-500 text-slate-200 text-sm font-medium"
+          >
+            로그아웃
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center gap-8 p-4 relative">
         <button

@@ -11,12 +11,19 @@ export async function GET() {
   try {
     const user = await prisma.user.findUnique({
       where: { id: session.userId },
-      select: { username: true, bankName: true, accountNumber: true, accountHolder: true },
+      select: { username: true, bankName: true, accountNumber: true, accountHolder: true, terminated: true },
     });
     if (!user) {
       return NextResponse.json({ error: "회원 정보를 찾을 수 없습니다." }, { status: 404 });
     }
-    return NextResponse.json(user);
+    if ((user as { terminated?: boolean }).terminated) {
+      return NextResponse.json(
+        { error: "계정이 해지되었습니다. BETEAST 관리자에게 문의하세요.", terminated: true },
+        { status: 403 }
+      );
+    }
+    const { terminated: _, ...profile } = user;
+    return NextResponse.json(profile);
   } catch (err) {
     console.error("GET /api/me:", err);
     return NextResponse.json(

@@ -16,6 +16,7 @@ export async function GET() {
         canBuy: true,
         canSell: true,
         suspended: true,
+        terminated: true,
         createdAt: true,
       },
     });
@@ -33,12 +34,12 @@ export async function GET() {
           accountHolder: true,
           role: true,
           status: true,
-          canBuy: true,
-          canSell: true,
-          createdAt: true,
-        },
-      });
-      return NextResponse.json(users.map((u) => ({ ...u, suspended: false })));
+        canBuy: true,
+        canSell: true,
+        createdAt: true,
+      },
+    });
+    return NextResponse.json(users.map((u) => ({ ...u, suspended: false, terminated: false })));
     } catch (fallbackErr) {
       console.error("Admin users list fallback error:", fallbackErr);
       return NextResponse.json(

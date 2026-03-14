@@ -24,6 +24,7 @@ model User {
   canBuy         Boolean       @default(false)
   canSell        Boolean       @default(false)
   suspended      Boolean       @default(false)
+  terminated     Boolean       @default(false)  // 해지 여부 (정상/정지/해지)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   transactions           Transaction[]
