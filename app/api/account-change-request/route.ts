@@ -98,7 +98,8 @@ export async function POST(request: Request) {
                 { text: "승인", callback_data: `acc:approve:${req.id}` },
                 { text: "거부", callback_data: `acc:reject:${req.id}` },
               ],
-            ];
+            ],
+          };
           await bot.sendMessage(adminChatId, text, { reply_markup: keyboard });
           telegramSent = true;
         } catch (tgErr) {
