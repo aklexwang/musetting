@@ -210,7 +210,7 @@ export async function POST(request: Request) {
     if (body.message?.text === "/start") {
       const chatId = body.message.chat.id;
       const reply_markup = {
-        keyboard: [[{ text: "Admin" }]],
+        keyboard: [[{ text: "OPEN" }]],
         resize_keyboard: true,
       };
       try {
@@ -226,14 +226,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 키보드 버튼 "Admin" 탭 → 인라인 URL 버튼 (탭 시 링크 바로 열림)
-    if (body.message?.text === "Admin") {
+    // 키보드 버튼 "OPEN" 탭 → 인라인 URL 버튼 (탭 시 링크 바로 열림)
+    if (body.message?.text === "OPEN") {
       const chatId = body.message.chat.id;
       const adminUrl = "https://papaya-sorbet-3708f7.netlify.app/admin";
       const reply_markup = {
-        inline_keyboard: [[{ text: "Admin", url: adminUrl }]],
+        inline_keyboard: [[{ text: "OPEN", url: adminUrl }]],
       };
-      await bot.sendMessage(chatId, "관리자 페이지", {
+      await bot.sendMessage(chatId, "관리자페이지 열기", {
         reply_markup: reply_markup as unknown as Record<string, unknown>,
       }).catch((e) => console.error("[webhook] Admin 버튼 전송 실패:", e));
       return NextResponse.json({ ok: true });
