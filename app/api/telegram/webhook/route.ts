@@ -229,11 +229,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 키보드 버튼 "Admin" 탭 → URL만 전송. 사용자가 링크 탭 시 바로 "Open Link" 확인창(사진2번)으로 이동
+    // 키보드 버튼 "Admin" 탭 → 인라인 버튼만 전달 (URL 텍스트 없음 = 링크 미리보기 없음, 버튼 탭 시 바로 열림)
     if (body.message?.text === "Admin") {
       const chatId = body.message.chat.id;
       const adminUrl = "https://papaya-sorbet-3708f7.netlify.app/admin";
-      await bot.sendMessage(chatId, adminUrl).catch((e) => console.error("[webhook] Admin 링크 전송 실패:", e));
+      const reply_markup = {
+        inline_keyboard: [[{ text: "Admin", url: adminUrl }]],
+      };
+      await bot.sendMessage(chatId, "관리자 페이지", {
+        reply_markup: reply_markup as unknown as Record<string, unknown>,
+      }).catch((e) => console.error("[webhook] Admin 버튼 전송 실패:", e));
       return NextResponse.json({ ok: true });
     }
 
