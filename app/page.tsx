@@ -643,10 +643,14 @@ export default function Home() {
                               <td className="py-3.5 px-4 tabular-nums text-slate-300 text-xs">{dateStr}</td>
                               <td className="py-3.5 px-4 text-right tabular-nums font-medium text-slate-100">{t.amount.toLocaleString("ko-KR")}원</td>
                               <td className="py-3.5 px-4 text-right tabular-nums text-slate-300">
-                                {t.status === "APPROVED" ? <span className="text-emerald-400 font-medium">{t.amount.toLocaleString("ko-KR")}원</span> : <span className="text-slate-500">—</span>}
+                                {t.status === "APPROVED" && <span className="text-emerald-400 font-medium">{t.amount.toLocaleString("ko-KR")}원</span>}
+                                {t.status === "REJECTED" && <span className="text-red-400/90 font-medium">{t.amount.toLocaleString("ko-KR")}원</span>}
+                                {t.status !== "APPROVED" && t.status !== "REJECTED" && <span className="text-slate-500">—</span>}
                               </td>
                               <td className="py-3.5 px-4 tabular-nums text-slate-300 text-xs">
-                                {t.status === "APPROVED" ? dateStr : <span className="text-slate-500">—</span>}
+                                {t.status === "APPROVED" && dateStr}
+                                {t.status === "REJECTED" && <span className="text-red-400/90">관리자 거절</span>}
+                                {t.status !== "APPROVED" && t.status !== "REJECTED" && <span className="text-slate-500">—</span>}
                               </td>
                             </tr>
                           );
