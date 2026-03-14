@@ -75,8 +75,6 @@ export default function DashboardPage() {
     return () => clearInterval(id);
   }, [user, hasPending]);
 
-  const SUSPENDED_MSG = "이용정지중입니다. BETEAST 관리자에게 문의하세요.";
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -88,24 +86,6 @@ export default function DashboardPage() {
     }
     if (value % 10000 !== 0) {
       setError("금액은 만 원 단위로만 입력 가능합니다. (예: 10000, 20000)");
-      return;
-    }
-    try {
-      const sessionRes = await fetch("/api/auth/session", { credentials: "include", cache: "no-store" });
-      const sessionData = await sessionRes.json().catch(() => ({}));
-      const me = sessionData?.user;
-      if (me) {
-        if (type === "BUY" && me.canBuy === false) {
-          setError(SUSPENDED_MSG);
-          return;
-        }
-        if (type === "SELL" && me.canSell === false) {
-          setError(SUSPENDED_MSG);
-          return;
-        }
-      }
-    } catch {
-      setError(SUSPENDED_MSG);
       return;
     }
     setSubmitLoading(true);

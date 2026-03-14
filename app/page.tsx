@@ -91,27 +91,13 @@ export default function Home() {
   const parsedAmount = amount.trim() === "" ? 0 : parseInt(amount.replace(/\D/g, ""), 10) || 0;
   const amountValid = parsedAmount >= 10000 && parsedAmount % 10000 === 0;
 
-  const SUSPENDED_MSG = "이용정지중입니다. BETEAST 관리자에게 문의하세요.";
-
-  const handleBuyClick = async () => {
+  const handleBuyClick = () => {
     if (parsedAmount < 10000) {
       alert("금액을 입력해 주세요. (1만 원 이상)");
       return;
     }
     if (parsedAmount % 10000 !== 0) {
       alert("금액은 만 원 단위로만 입력 가능합니다. (예: 10000, 20000)");
-      return;
-    }
-    try {
-      const res = await fetch("/api/auth/session", { credentials: "include", cache: "no-store" });
-      const data = await res.json().catch(() => ({}));
-      const me = data?.user;
-      if (me && me.canBuy === false) {
-        alert(SUSPENDED_MSG);
-        return;
-      }
-    } catch {
-      alert(SUSPENDED_MSG);
       return;
     }
     setConfirmMode("buy");
@@ -119,25 +105,13 @@ export default function Home() {
     setConfirmOpen(true);
   };
 
-  const handleSellClick = async () => {
+  const handleSellClick = () => {
     if (parsedAmount < 10000) {
       alert("금액을 입력해 주세요. (1만 원 이상)");
       return;
     }
     if (parsedAmount % 10000 !== 0) {
       alert("금액은 만 원 단위로만 입력 가능합니다. (예: 10000, 20000)");
-      return;
-    }
-    try {
-      const res = await fetch("/api/auth/session", { credentials: "include", cache: "no-store" });
-      const data = await res.json().catch(() => ({}));
-      const me = data?.user;
-      if (me && me.canSell === false) {
-        alert(SUSPENDED_MSG);
-        return;
-      }
-    } catch {
-      alert(SUSPENDED_MSG);
       return;
     }
     setConfirmMode("sell");
@@ -150,21 +124,6 @@ export default function Home() {
     if (pendingTxnId) return;
     setConfirmLoading(true);
     try {
-      const sessionRes = await fetch("/api/auth/session", { credentials: "include", cache: "no-store" });
-      const sessionData = await sessionRes.json().catch(() => ({}));
-      const me = sessionData?.user;
-      if (me) {
-        if (confirmMode === "buy" && me.canBuy === false) {
-          alert(SUSPENDED_MSG);
-          setConfirmLoading(false);
-          return;
-        }
-        if (confirmMode === "sell" && me.canSell === false) {
-          alert(SUSPENDED_MSG);
-          setConfirmLoading(false);
-          return;
-        }
-      }
       const res = await fetch("/api/transactions", {
         method: "POST",
         credentials: "include",

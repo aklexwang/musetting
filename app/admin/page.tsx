@@ -16,7 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -171,14 +170,6 @@ export default function AdminPage() {
     } finally {
       setUpdatingId(null);
     }
-  };
-
-  const handleCanBuyChange = (id: string, checked: boolean) => {
-    updateUser(id, { canBuy: checked });
-  };
-
-  const handleCanSellChange = (id: string, checked: boolean) => {
-    updateUser(id, { canSell: checked });
   };
 
   const kpiCards: { label: string; value: number; hint?: string; onClick?: () => void; gradient: string }[] = [
@@ -525,8 +516,6 @@ export default function AdminPage() {
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">계좌번호</TableHead>
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">예금주</TableHead>
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">가입상태</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">구매</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">판매</TableHead>
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">가입일</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -541,22 +530,6 @@ export default function AdminPage() {
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium ${user.status === "PENDING" ? "bg-amber-500/20 text-amber-300" : user.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
                               {STATUS_OPTIONS.find((o) => o.value === user.status)?.label ?? user.status}
                             </span>
-                          </TableCell>
-                          <TableCell className="px-6 py-4">
-                            <Switch
-                              checked={user.canBuy}
-                              onCheckedChange={(c) => handleCanBuyChange(user.id, c === true)}
-                              disabled={updatingId === user.id}
-                              className="data-[state=checked]:bg-emerald-600"
-                            />
-                          </TableCell>
-                          <TableCell className="px-6 py-4">
-                            <Switch
-                              checked={user.canSell}
-                              onCheckedChange={(c) => handleCanSellChange(user.id, c === true)}
-                              disabled={updatingId === user.id}
-                              className="data-[state=checked]:bg-emerald-600"
-                            />
                           </TableCell>
                           <TableCell className="text-slate-500 text-sm px-6 py-4 tabular-nums">
                             {new Date(user.createdAt).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit", year: "numeric" })}
