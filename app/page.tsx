@@ -22,9 +22,11 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
 type User = { userId: string; username: string; canBuy?: boolean; canSell?: boolean } | null;
+type Profile = { username: string; bankName: string; accountNumber: string; accountHolder: string } | null;
 
 export default function Home() {
   const [user, setUser] = useState<User>(null);
+  const [profile, setProfile] = useState<Profile>(null);
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -54,6 +56,17 @@ export default function Home() {
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setProfile(null);
+      return;
+    }
+    fetch("/api/me", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setProfile(data ?? null))
+      .catch(() => setProfile(null));
+  }, [user]);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -275,19 +288,16 @@ export default function Home() {
 
   if (user) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-8 p-4">
-        <div className="absolute top-4 right-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-slate-400 border border-slate-600 bg-slate-800/50 hover:text-slate-200 hover:border-slate-500 hover:bg-slate-700/80 rounded-md transition-colors"
-            onClick={handleLogout}
-          >
-            로그아웃
-          </Button>
-        </div>
+      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center gap-8 p-4 relative">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="absolute top-4 right-4 h-7 px-2.5 text-sm font-medium text-slate-400 bg-slate-800/50 border border-slate-600 rounded-md hover:text-slate-200 hover:border-slate-500 hover:bg-slate-700/80 transition-colors"
+        >
+          로그아웃
+        </button>
         {rejectedMessage && (
-          <div className="absolute top-14 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg bg-red-900/80 text-red-200 text-sm border border-red-700">
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg bg-red-900/80 text-red-200 text-sm border border-red-700 z-10">
             {rejectedMessage}
             <button type="button" className="ml-2 underline" onClick={() => setRejectedMessage(null)}>
               닫기
@@ -295,15 +305,51 @@ export default function Home() {
           </div>
         )}
         <img
-          src="https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_200,h_42,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png"
-          srcSet="https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_200,h_42,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png 1x, https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_274,h_58,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png 2x"
+          src="https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_200,h_42,al_c,lg_1,q_85/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png"
           alt="BETEAST"
           className="h-[42px] w-auto"
         />
-        <p className="text-slate-400 text-sm">회원아이디 {user?.username ?? ""}</p>
-        <div className="flex flex-col items-center gap-6 w-full max-w-xs">
+        <Link
+          href="/dashboard"
+          className="w-full max-w-[20rem] py-2.5 px-4 text-[0.9375rem] font-semibold text-white text-center rounded-xl border border-blue-400/45 bg-gradient-to-b from-[#1e3a5f] via-[#152238] to-[#1a2840] shadow-[0_1px_0_rgba(96,165,250,0.2)_inset,-1px_-1px_0_rgba(0,0,0,0.25),0_2px_8px_rgba(0,0,0,0.2)] hover:from-[#234872] hover:via-[#1a3050] hover:to-[#1e3a5f] hover:border-blue-300/50 transition-all"
+        >
+          거래내역
+        </Link>
+        <div className="w-full max-w-[20rem] text-sm text-slate-400">
+          <p className="text-center text-lg font-bold text-white bg-gradient-to-br from-blue-500/25 to-emerald-500/20 border border-blue-500/40 rounded-[10px] py-2.5 px-4 mb-3 tracking-wide">
+            회원아이디 : {user?.username ?? ""}
+          </p>
+          <p className="text-center font-medium text-slate-400 mb-2">등록된 계좌</p>
+          <div className="border border-slate-700 rounded-lg bg-slate-800/50 overflow-hidden p-0">
+            <table className="w-full border-collapse">
+              <tbody className="text-slate-200">
+                <tr className="border-b border-slate-700">
+                  <th className="text-left py-2 px-3 text-slate-400 font-medium w-[5.5rem]">예금주 :</th>
+                  <td className="py-2 px-3">{profile?.accountHolder ?? "-"}</td>
+                </tr>
+                <tr className="border-b border-slate-700">
+                  <th className="text-left py-2 px-3 text-slate-400 font-medium w-[5.5rem]">은행명 :</th>
+                  <td className="py-2 px-3">{profile?.bankName ?? "-"}</td>
+                </tr>
+                <tr>
+                  <th className="text-left py-2 px-3 text-slate-400 font-medium w-[5.5rem]">계좌번호 :</th>
+                  <td className="py-2 px-3 font-mono">{profile?.accountNumber ?? "-"}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div className="px-3 pb-3 pt-1">
+              <Link
+                href="/dashboard"
+                className="block w-full py-2.5 px-4 text-[0.9375rem] font-semibold text-white text-center rounded-xl border border-blue-400/45 bg-gradient-to-b from-[#1e3a5f] via-[#152238] to-[#1a2840] hover:from-[#234872] hover:via-[#1a3050] hover:to-[#1e3a5f] hover:border-blue-300/50 transition-all"
+              >
+                계좌번호 변경요청
+              </Link>
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col items-center gap-6 w-full max-w-[20rem]">
           <div className="w-full flex items-center justify-center">
-            <div className="flex items-center w-full max-w-[240px] rounded-md border border-slate-700 bg-slate-800/50 px-4 py-2.5 focus-within:ring-2 focus-within:ring-slate-500 focus-within:ring-offset-0 focus-within:ring-offset-slate-950">
+            <div className="flex items-center w-full max-w-[20rem] rounded-md border border-slate-700 bg-slate-800/50 py-2.5 px-4 focus-within:outline-2 focus-within:outline-slate-500 focus-within:outline-offset-0">
               <input
                 id="amount"
                 type="text"
@@ -320,21 +366,21 @@ export default function Home() {
               <span className="text-slate-400 text-sm shrink-0 ml-1.5">원</span>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Button
+          <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
+            <button
               type="button"
               onClick={handleBuyClick}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white w-44 h-12 text-base"
+              className="w-44 h-12 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-base font-medium"
             >
               구매
-            </Button>
-            <Button
+            </button>
+            <button
               type="button"
               onClick={handleSellClick}
-              className="bg-sky-600 hover:bg-sky-500 text-white w-44 h-12 text-base"
+              className="w-44 h-12 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-base font-medium"
             >
               판매
-            </Button>
+            </button>
           </div>
         </div>
 

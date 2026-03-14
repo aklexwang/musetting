@@ -22,7 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 type UserStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -228,9 +227,9 @@ export default function AdminPage() {
   ];
 
   const renderTxnTable = (list: AdminTransaction[], title: string) => (
-    <Card className="rounded-2xl border border-slate-700/60 bg-slate-900/50 backdrop-blur-sm overflow-hidden">
-      <CardHeader className="border-b border-slate-700/50 px-6 py-5">
-        <CardTitle className="text-slate-100 font-semibold tracking-tight">{title}</CardTitle>
+    <Card className="rounded-2xl border border-slate-700/50 bg-slate-950/40 overflow-hidden">
+      <CardHeader className="border-b border-slate-700/50 px-6 py-5 text-center">
+        <CardTitle className="text-slate-100 font-semibold text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         {txnLoading ? (
@@ -241,18 +240,18 @@ export default function AdminPage() {
           <Table>
             <TableHeader>
               <TableRow className="border-slate-700/50 hover:bg-transparent">
-                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">아이디</TableHead>
-                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">금액</TableHead>
-                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">상태</TableHead>
-                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">신청일시</TableHead>
+                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">아이디</TableHead>
+                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">금액</TableHead>
+                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">상태</TableHead>
+                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">신청일시</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {list.map((txn, i) => (
                 <TableRow key={txn.id} className={`border-slate-700/40 hover:bg-slate-800/40 transition-colors ${i % 2 === 1 ? "bg-slate-800/20" : ""}`}>
-                  <TableCell className="text-slate-200 font-medium px-6 py-4">{txn.user?.username ?? "-"}</TableCell>
-                  <TableCell className="text-slate-300 font-mono text-sm px-6 py-4">{txn.amount.toLocaleString("ko-KR")}원</TableCell>
-                  <TableCell className="px-6 py-4">
+                  <TableCell className="text-slate-200 font-medium px-6 py-4 text-center">{txn.user?.username ?? "-"}</TableCell>
+                  <TableCell className="text-slate-300 font-mono text-sm px-6 py-4 text-center">{txn.amount.toLocaleString("ko-KR")}원</TableCell>
+                  <TableCell className="px-6 py-4 text-center">
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         txn.status === "PENDING"
@@ -265,7 +264,7 @@ export default function AdminPage() {
                       {txn.status === "PENDING" ? "대기" : txn.status === "APPROVED" ? "승인" : "거절"}
                     </span>
                   </TableCell>
-                  <TableCell className="text-slate-500 text-sm px-6 py-4 tabular-nums">
+                  <TableCell className="text-slate-500 text-sm px-6 py-4 tabular-nums text-center">
                     {new Date(txn.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                   </TableCell>
                 </TableRow>
@@ -278,17 +277,17 @@ export default function AdminPage() {
   );
 
   return (
-    <div className="min-h-screen w-full bg-slate-950 text-slate-100 antialiased">
+    <div className="min-h-screen w-full bg-[#020617] text-[#f1f5f9] antialiased">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-30%,rgba(56,189,248,0.06),transparent_50%)] pointer-events-none" aria-hidden />
-      <div className="container relative max-w-6xl mx-auto px-4 py-8 sm:py-10">
+      <div className="container relative max-w-[72rem] mx-auto px-4 py-8 sm:py-10 text-center">
         <header className="mb-10">
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
+          <h1 className="text-[1.875rem] font-semibold tracking-tight text-white">
             Admin Dashboard
           </h1>
           <p className="mt-1 text-slate-400 text-sm">가맹점 벳이스트 관리</p>
         </header>
 
-        <nav className="flex flex-wrap gap-1 p-1 rounded-2xl bg-slate-800/40 border border-slate-700/50 w-fit mb-10" role="tablist">
+        <nav className="flex flex-wrap justify-center gap-1 p-1 rounded-2xl bg-slate-800/40 border border-slate-700/50 w-fit mx-auto mb-10" role="tablist">
           {MENU_ITEMS.map((item) => (
             <button
               key={item.id}
@@ -309,16 +308,16 @@ export default function AdminPage() {
 
         {menu === "현황판" && (
           <div className="space-y-8">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
               {kpiCards.map((card) => {
                 const content = (
                   <>
-                    <p className="text-4xl sm:text-5xl font-bold tabular-nums text-white leading-none">{card.value}</p>
-                    <p className="text-white text-sm mt-2 font-medium">{card.label}</p>
+                    <p className="text-[2.25rem] font-bold tabular-nums text-white leading-none">{card.value}</p>
+                    <p className="text-white text-sm font-medium mt-2">{card.label}</p>
                     {card.hint && <p className="text-white/70 text-xs mt-1.5">{card.hint}</p>}
                   </>
                 );
-                const style = `rounded-2xl border-0 bg-gradient-to-br ${card.gradient} p-6 sm:p-7 text-left transition-transform duration-200 hover:scale-[1.02] active:scale-[0.99] shadow-lg`;
+                const style = `rounded-2xl border-0 bg-gradient-to-br ${card.gradient} p-6 text-center transition-transform duration-200 hover:scale-[1.02] active:scale-[0.99] shadow-[0_10px_15px_-3px_rgba(0,0,0,0.2)] cursor-pointer`;
                 return card.onClick ? (
                   <button key={card.label} type="button" onClick={card.onClick} className={style}>
                     {content}
@@ -331,32 +330,53 @@ export default function AdminPage() {
               })}
             </div>
 
-            <Card className="rounded-2xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
-              <CardHeader className="border-b border-slate-700/50 px-6 py-4">
-                <CardTitle className="text-slate-100 font-semibold tracking-tight text-base">실시간 최근 활동</CardTitle>
+            <Card className="rounded-2xl border border-slate-700/50 bg-slate-950/40 overflow-hidden mb-4">
+              <CardHeader className="border-b border-slate-700/50 px-6 py-5 text-center">
+                <CardTitle className="text-slate-100 font-semibold text-base">실시간 최근 활동</CardTitle>
                 <CardDescription className="text-slate-400 text-sm mt-0.5">최근 회원가입·구매·판매 최대 10건</CardDescription>
               </CardHeader>
-              <CardContent className="px-6 py-4">
+              <CardContent className="p-0">
                 {recentActivities.length === 0 ? (
-                  <p className="text-slate-500 text-sm py-6 text-center">최근 활동이 없습니다.</p>
+                  <p className="text-slate-500 text-sm py-8 text-center">최근 활동이 없습니다.</p>
                 ) : (
-                  <ul className="space-y-2">
+                  <ul className="p-6 space-y-3 list-none">
                     {recentActivities.map((item) => (
                       <li
                         key={`${item.kind}-${item.id}-${item.createdAt}`}
-                        className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 rounded-lg bg-slate-800/50 border border-slate-700/40 text-sm"
+                        className="rounded-xl bg-slate-800/50 border border-slate-700/40 overflow-hidden"
                       >
-                        <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded ${item.kind === "회원가입" ? "bg-amber-500/20 text-amber-300" : item.kind === "구매" ? "bg-violet-500/20 text-violet-300" : "bg-pink-500/20 text-pink-300"}`}>
-                          {item.kind}
-                        </span>
-                        <span className="text-slate-500 shrink-0">{new Date(item.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
-                        <span className="text-slate-400">아이디 <span className="text-slate-200">{item.username}</span></span>
-                        <span className="text-slate-400">은행 <span className="text-slate-200">{item.bankName}</span></span>
-                        <span className="text-slate-400">계좌번호 <span className="text-slate-200 font-mono">{item.accountNumber}</span></span>
-                        <span className="text-slate-400">예금주 <span className="text-slate-200">{item.accountHolder}</span></span>
-                        {item.amount != null && (
-                          <span className="text-slate-400">금액 <span className="text-slate-200 font-semibold tabular-nums">{item.amount.toLocaleString("ko-KR")}원</span></span>
-                        )}
+                        <div className="flex items-center justify-center gap-3 py-2 px-4 border-b border-slate-700/40">
+                          <span className={`text-xs font-medium px-2.5 py-1 rounded-md ${item.kind === "회원가입" ? "bg-amber-500/20 text-amber-300" : item.kind === "구매" ? "bg-violet-500/20 text-violet-300" : "bg-pink-500/20 text-pink-300"}`}>
+                            {item.kind}
+                          </span>
+                          <span className="text-slate-500 text-xs tabular-nums">
+                            {new Date(item.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3 py-3 px-4 text-sm">
+                          <div className="flex flex-col items-center text-center">
+                            <span className="text-xs text-slate-500">아이디</span>
+                            <span className="text-slate-200 font-medium mt-0.5">{item.username}</span>
+                          </div>
+                          <div className="flex flex-col items-center text-center">
+                            <span className="text-xs text-slate-500">은행</span>
+                            <span className="text-slate-200 font-medium mt-0.5">{item.bankName}</span>
+                          </div>
+                          <div className="flex flex-col items-center text-center">
+                            <span className="text-xs text-slate-500">계좌번호</span>
+                            <span className="text-slate-200 font-mono text-xs mt-0.5">{item.accountNumber}</span>
+                          </div>
+                          <div className="flex flex-col items-center text-center">
+                            <span className="text-xs text-slate-500">예금주</span>
+                            <span className="text-slate-200 font-medium mt-0.5">{item.accountHolder}</span>
+                          </div>
+                          {item.amount != null && (
+                            <div className="flex flex-col items-center text-center sm:col-span-2">
+                              <span className="text-xs text-slate-500">금액</span>
+                              <span className="text-slate-200 font-medium tabular-nums mt-0.5">{item.amount.toLocaleString("ko-KR")}원</span>
+                            </div>
+                          )}
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -364,9 +384,9 @@ export default function AdminPage() {
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
-              <CardHeader className="border-b border-slate-700/50 px-6 py-5">
-                <CardTitle className="text-slate-100 font-semibold tracking-tight">주요 지표</CardTitle>
+            <Card className="rounded-2xl border border-slate-700/50 bg-slate-950/40 overflow-hidden">
+              <CardHeader className="border-b border-slate-700/50 px-6 py-5 text-center">
+                <CardTitle className="text-slate-100 font-semibold text-base">주요 지표</CardTitle>
                 <CardDescription className="text-slate-400 text-sm mt-0.5">지표별 비교</CardDescription>
               </CardHeader>
               <CardContent className="px-6 py-5 space-y-4">
@@ -378,14 +398,14 @@ export default function AdminPage() {
                   { label: "판매", value: sellCount, bar: "bg-pink-500" },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center gap-4">
-                    <span className="text-slate-400 text-sm w-24 shrink-0">{item.label}</span>
+                    <span className="text-slate-400 text-sm w-24 shrink-0 text-center">{item.label}</span>
                     <div className="flex-1 h-3 rounded-full bg-slate-800 overflow-hidden">
                       <div
                         className={`h-full rounded-full ${item.bar} transition-all duration-700 ease-out min-w-[4px]`}
                         style={{ width: `${(item.value / maxBar) * 100}%` }}
                       />
                     </div>
-                    <span className="text-slate-200 font-mono text-sm w-10 text-right tabular-nums">{item.value}</span>
+                    <span className="text-slate-200 font-mono text-sm w-10 text-center tabular-nums">{item.value}</span>
                   </div>
                 ))}
               </CardContent>
@@ -564,16 +584,16 @@ export default function AdminPage() {
         </Dialog>
 
         {menu === "회원목록" && (
-          <Card className="rounded-2xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
-            <CardHeader className="border-b border-slate-700/50 px-6 py-5">
-              <CardTitle className="text-slate-100 font-semibold tracking-tight">회원목록</CardTitle>
-              <div className="mt-4">
+          <Card className="rounded-2xl border border-slate-700/50 bg-slate-950/40 overflow-hidden">
+            <CardHeader className="border-b border-slate-700/50 px-6 py-5 text-center">
+              <CardTitle className="text-slate-100 font-semibold text-base">회원목록</CardTitle>
+              <div className="mt-4 flex justify-center">
                 <Input
                   type="text"
                   placeholder="아이디·예금주·은행명으로 회원 검색"
                   value={memberSearch}
                   onChange={(e) => setMemberSearch(e.target.value)}
-                  className="max-w-xs h-10 rounded-lg border-slate-600 bg-slate-800/60 text-slate-200 placeholder:text-slate-500"
+                  className="max-w-[20rem] h-10 rounded-lg border border-slate-600 bg-slate-800/60 text-slate-200 placeholder:text-slate-500 text-center focus:border-slate-500 focus:ring-2 focus:ring-slate-500/30"
                 />
               </div>
             </CardHeader>
@@ -601,41 +621,52 @@ export default function AdminPage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-slate-700/50 hover:bg-transparent">
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">아이디</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">은행</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">계좌번호</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">예금주</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">가입상태</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">가입일</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-right">정지</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">아이디</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">은행</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">계좌번호</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">예금주</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">가입상태</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">상태</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">가입일</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">정지</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">설정</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredUsers.map((user, i) => (
                         <TableRow key={user.id} className={`border-slate-700/40 hover:bg-slate-800/40 transition-colors ${i % 2 === 1 ? "bg-slate-800/20" : ""}`}>
-                          <TableCell className="text-slate-200 font-medium px-6 py-4">{user.username}</TableCell>
-                          <TableCell className="text-slate-400 text-sm px-6 py-4">{user.bankName}</TableCell>
-                          <TableCell className="text-slate-400 text-sm px-6 py-4 tabular-nums">{user.accountNumber}</TableCell>
-                          <TableCell className="text-slate-400 text-sm px-6 py-4">{user.accountHolder}</TableCell>
-                          <TableCell className="px-6 py-4">
+                          <TableCell className="text-slate-200 font-medium px-6 py-4 text-center">{user.username}</TableCell>
+                          <TableCell className="text-slate-400 text-sm px-6 py-4 text-center">{user.bankName}</TableCell>
+                          <TableCell className="text-slate-400 text-sm px-6 py-4 tabular-nums text-center">{user.accountNumber}</TableCell>
+                          <TableCell className="text-slate-400 text-sm px-6 py-4 text-center">{user.accountHolder}</TableCell>
+                          <TableCell className="px-6 py-4 text-center">
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium ${user.status === "PENDING" ? "bg-amber-500/20 text-amber-300" : user.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
                               {STATUS_OPTIONS.find((o) => o.value === user.status)?.label ?? user.status}
                             </span>
                           </TableCell>
-                          <TableCell className="text-slate-500 text-sm px-6 py-4 tabular-nums">
+                          <TableCell className="px-6 py-4 text-center text-sm text-slate-400">
+                            {user.suspended ? "이용정지" : "정상"}
+                          </TableCell>
+                          <TableCell className="text-slate-500 text-sm px-6 py-4 tabular-nums text-center">
                             {new Date(user.createdAt).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit", year: "numeric" })}
                           </TableCell>
-                          <TableCell className="px-6 py-4 text-right">
-                            <Button
+                          <TableCell className="px-6 py-4 text-center">
+                            <button
                               type="button"
-                              variant={user.suspended ? "secondary" : "destructive"}
-                              size="sm"
                               disabled={updatingId === user.id}
-                              className={user.suspended ? "bg-slate-600 hover:bg-slate-500 text-slate-200" : ""}
+                              className={`h-7 px-2.5 text-sm font-medium rounded-lg ${user.suspended ? "text-slate-400 bg-slate-600/50 hover:bg-slate-600" : "text-red-400 bg-red-500/10 hover:bg-red-500/20"}`}
                               onClick={() => updateUser(user.id, { suspended: !user.suspended })}
                             >
                               {user.suspended ? "해제" : "정지"}
-                            </Button>
+                            </button>
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-center">
+                            <button
+                              type="button"
+                              className="h-7 px-2.5 text-sm font-medium text-slate-400 bg-slate-600/30 border border-slate-500/50 rounded-lg hover:bg-slate-600/60 hover:text-slate-200"
+                            >
+                              설정
+                            </button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -649,13 +680,13 @@ export default function AdminPage() {
 
         {menu === "구매" && (
           <>
-            <div className="mb-4">
+            <div className="mb-4 flex justify-center">
               <Input
                 type="text"
                 placeholder="아이디로 회원 검색"
                 value={memberSearch}
                 onChange={(e) => setMemberSearch(e.target.value)}
-                className="max-w-xs h-10 rounded-lg border-slate-600 bg-slate-800/60 text-slate-200 placeholder:text-slate-500"
+                className="max-w-[20rem] h-10 rounded-lg border border-slate-600 bg-slate-800/60 text-slate-200 placeholder:text-slate-500 text-center focus:border-slate-500 focus:ring-2 focus:ring-slate-500/30"
               />
             </div>
             {renderTxnTable(filteredBuyTxns, "구매 신청 내역")}
@@ -663,13 +694,13 @@ export default function AdminPage() {
         )}
         {menu === "판매" && (
           <>
-            <div className="mb-4">
+            <div className="mb-4 flex justify-center">
               <Input
                 type="text"
                 placeholder="아이디로 회원 검색"
                 value={memberSearch}
                 onChange={(e) => setMemberSearch(e.target.value)}
-                className="max-w-xs h-10 rounded-lg border-slate-600 bg-slate-800/60 text-slate-200 placeholder:text-slate-500"
+                className="max-w-[20rem] h-10 rounded-lg border border-slate-600 bg-slate-800/60 text-slate-200 placeholder:text-slate-500 text-center focus:border-slate-500 focus:ring-2 focus:ring-slate-500/30"
               />
             </div>
             {renderTxnTable(filteredSellTxns, "판매 신청 내역")}
