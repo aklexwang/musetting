@@ -44,7 +44,8 @@ export default function Home() {
   const [pendingTxnType, setPendingTxnType] = useState<"buy" | "sell" | null>(null);
   /** 승인됨 → 검색 중(스캔) 화면 표시 */
   const [showScanning, setShowScanning] = useState(false);
-  const [rejectedMessage, setRejectedMessage] = useState<string | null>(null);
+  /** 거래 거절 시 표시: 구매/판매 구분 + 금액 (금액란 위치에 표시) */
+  const [rejectedTxnInfo, setRejectedTxnInfo] = useState<{ type: "BUY" | "SELL"; amount: number } | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [scanTime, setScanTime] = useState("");
   /** 거래내역 모달 */
@@ -241,7 +242,10 @@ export default function Home() {
           }
           setPendingTxnId(null);
           setConfirmOpen(false);
-          setRejectedMessage("거래가 거절되었습니다.");
+          setRejectedTxnInfo({
+            type: (txn.type === "SELL" ? "SELL" : "BUY") as "BUY" | "SELL",
+            amount: Number(txn.amount) || 0,
+          });
         }
       } catch {
         /* ignore */
@@ -333,14 +337,6 @@ export default function Home() {
         >
           로그아웃
         </button>
-        {rejectedMessage && (
-          <div className="absolute top-14 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg bg-red-900/80 text-red-200 text-sm border border-red-700 z-10">
-            {rejectedMessage}
-            <button type="button" className="ml-2 underline" onClick={() => setRejectedMessage(null)}>
-              닫기
-            </button>
-          </div>
-        )}
         <img
           src="https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_200,h_42,al_c,lg_1,q_85/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png"
           alt="BETEAST"
@@ -442,6 +438,24 @@ export default function Home() {
           )}
         </div>
         <div className="flex flex-col items-center gap-6 w-full max-w-[20rem]">
+          {rejectedTxnInfo ? (
+            <div className="w-full rounded-xl border border-red-500/50 bg-red-900/30 px-4 py-4 text-center">
+              <p className="text-red-200 font-medium mb-1">
+                {rejectedTxnInfo.type === "BUY" ? "구매" : "판매"}가 거절되었습니다.
+              </p>
+              <p className="text-slate-300 text-sm mb-3">
+                금액: {rejectedTxnInfo.amount.toLocaleString("ko-KR")}원
+              </p>
+              <button
+                type="button"
+                onClick={() => setRejectedTxnInfo(null)}
+                className="py-2 px-4 rounded-lg bg-slate-600 hover:bg-slate-500 text-white text-sm font-medium"
+              >
+                닫기
+              </button>
+            </div>
+          ) : (
+            <>
           <div className="w-full flex items-center justify-center">
             <div className="flex items-center w-full max-w-[20rem] rounded-md border border-slate-700 bg-slate-800/50 py-2.5 px-4 focus-within:outline-2 focus-within:outline-slate-500 focus-within:outline-offset-0">
               <input
@@ -476,6 +490,8 @@ export default function Home() {
               판매
             </button>
           </div>
+            </>
+          )}
         </div>
 
         <Dialog
