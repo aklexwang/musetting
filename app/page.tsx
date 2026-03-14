@@ -165,6 +165,7 @@ export default function Home() {
   const amountValid = parsedAmount >= 10000 && parsedAmount % 10000 === 0;
 
   const handleBuyClick = () => {
+    if (pendingAccountChange) return;
     if (parsedAmount < 10000) return;
     if (parsedAmount % 10000 !== 0) return;
     setConfirmMode("buy");
@@ -173,6 +174,7 @@ export default function Home() {
   };
 
   const handleSellClick = () => {
+    if (pendingAccountChange) return;
     if (parsedAmount < 10000) return;
     if (parsedAmount % 10000 !== 0) return;
     setConfirmMode("sell");
@@ -478,14 +480,16 @@ export default function Home() {
             <button
               type="button"
               onClick={handleBuyClick}
-              className="w-44 h-12 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-base font-medium"
+              disabled={pendingAccountChange}
+              className={`w-44 h-12 rounded-lg text-white text-base font-medium transition-opacity ${pendingAccountChange ? "bg-emerald-600/50 cursor-not-allowed opacity-60" : "bg-emerald-600 hover:bg-emerald-500"}`}
             >
               구매
             </button>
             <button
               type="button"
               onClick={handleSellClick}
-              className="w-44 h-12 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-base font-medium"
+              disabled={pendingAccountChange}
+              className={`w-44 h-12 rounded-lg text-white text-base font-medium transition-opacity ${pendingAccountChange ? "bg-sky-600/50 cursor-not-allowed opacity-60" : "bg-sky-600 hover:bg-sky-500"}`}
             >
               판매
             </button>
