@@ -188,10 +188,11 @@ export default function SignupPage() {
               ) : approved ? (
                 "로그인 화면에서 로그인하실 수 있습니다."
               ) : (
-                <span className="block text-center space-y-2 mt-2">
-                  <span className="block">가입 요청이 완료되었습니다. 관리자 검토 후 승인되면 로그인하실 수 있습니다.</span>
-                  <span className="block">승인 후 이 화면에서 자동으로 로그인 페이지로 이동합니다.</span>
-                </span>
+                <div className="flex flex-col items-center justify-center text-center space-y-3 mt-6 py-6">
+                  <p className="text-slate-300">가입 요청이 완료되었습니다.</p>
+                  <p className="text-slate-300">관리자 검토 후 승인되면 로그인하실 수 있습니다.</p>
+                  <p className="text-slate-300">승인 후 이 화면에서 자동으로 로그인 페이지로 이동합니다.</p>
+                </div>
               )}
             </CardDescription>
           </CardHeader>
