@@ -130,7 +130,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: true });
         }
 
-        const typeIcon = txn.type === "BUY" ? "🛒" : "📤";
+        const typeIcon = txn.type === "BUY" ? "🔵" : "🔴";
         const typeLabel = txn.type === "BUY" ? "구매" : "판매";
         const dateStr = txn.createdAt
           ? new Date(txn.createdAt).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
@@ -150,7 +150,7 @@ export async function POST(request: Request) {
             where: { id: txnId },
             data: { status: "APPROVED" },
           });
-          const resultText = `✅ ${typeIcon} ${typeLabel} 승인\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${dateStr}`;
+          const resultText = `${typeIcon} ${typeLabel} 승인\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${dateStr}`;
           await bot.answerCallbackQuery(queryId);
           await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch((e) => {
             console.error("[webhook] editMessageText 실패:", e);
@@ -160,7 +160,7 @@ export async function POST(request: Request) {
             where: { id: txnId },
             data: { status: "REJECTED" },
           });
-          const resultText = `❌ ${typeIcon} ${typeLabel} 승인 거절\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${rejectDateStr}`;
+          const resultText = `❌ ${typeIcon}${typeLabel} 승인 거절\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${rejectDateStr}`;
           await bot.answerCallbackQuery(queryId);
           await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch(() => {});
         }
