@@ -219,6 +219,12 @@ export async function POST(request: Request) {
           `이 채팅방은 가맹점 "벳이스트" 전용방입니다.\n궁금하신점은 본사로 문의주세여\n\n아래 키보드 버튼으로 지난 가입/구매/판매 데이터를 확인할 수 있습니다.`,
           { reply_markup: reply_markup as unknown as Record<string, unknown> }
         );
+        const adminMarkup = {
+          inline_keyboard: [[{ text: "Admin", url: "https://papaya-sorbet-3708f7.netlify.app/admin" }]],
+        };
+        await bot.sendMessage(chatId, "관리자 페이지", {
+          reply_markup: adminMarkup as unknown as Record<string, unknown>,
+        }).catch(() => {});
       } catch (e) {
         console.error("[webhook] /start sendMessage 실패:", e);
         await bot.sendMessage(chatId, `이 채팅방은 가맹점 "벳이스트" 전용방입니다.\n궁금하신점은 본사로 문의주세여`).catch(() => {});
