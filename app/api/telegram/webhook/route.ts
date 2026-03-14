@@ -102,9 +102,13 @@ export async function POST(request: Request) {
 
       // Admin 링크 열기 + 메시지 삭제 (사진1번 자동 삭제)
       if (data === "admin_open") {
-        const adminUrl = "https://papaya-sorbet-3708f7.netlify.app/admin";
-        await bot.answerCallbackQuery(queryId, { url: adminUrl });
-        await bot.deleteMessage(chatId, messageId).catch((e) => console.error("[webhook] deleteMessage 실패:", e));
+        try {
+          const adminUrl = "https://papaya-sorbet-3708f7.netlify.app/admin";
+          await bot.answerCallbackQuery(queryId, { url: adminUrl });
+          await bot.deleteMessage(chatId, messageId).catch((e) => console.error("[webhook] deleteMessage 실패:", e));
+        } catch (e) {
+          console.error("[webhook] admin_open 처리 실패:", e);
+        }
         return NextResponse.json({ ok: true });
       }
 
