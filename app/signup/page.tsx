@@ -137,14 +137,7 @@ export default function SignupPage() {
       });
       const json = await res.json().catch(() => ({}));
 
-      if (!res.ok) {
-        const message =
-          typeof json.error === "string"
-            ? json.error
-            : "가입에 실패했습니다. 다시 시도해 주세요.";
-        alert(message);
-        return;
-      }
+      if (!res.ok) return;
 
       setPendingUsername(data.username);
       setPendingApproval(true);
@@ -156,7 +149,7 @@ export default function SignupPage() {
         accountHolder: "",
       });
     } catch {
-      alert("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+      // 네트워크 오류 시 조용히 처리
     } finally {
       setIsSubmitting(false);
     }

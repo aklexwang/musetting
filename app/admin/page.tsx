@@ -192,14 +192,10 @@ export default function AdminPage() {
     try {
       const res = await fetch("/api/admin/users?status=PENDING", { method: "DELETE" });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        alert(data?.error ?? "삭제에 실패했습니다.");
-        return;
-      }
-      alert(`가입 대기 ${data.deleted ?? 0}건이 삭제되었습니다.`);
+      if (!res.ok) return;
       await fetchUsers();
     } catch {
-      alert("요청 중 오류가 발생했습니다.");
+      // 요청 중 오류 시 조용히 처리
     } finally {
       setDeletingPending(false);
     }
@@ -239,17 +235,13 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, ...payload }),
       });
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        alert(json.error ?? "저장에 실패했습니다.");
-        return;
-      }
-      const updated = await res.json();
+      if (!res.ok) return;
+      const updated = await res.json().catch(() => ({}));
       setUsers((prev) =>
         prev.map((u) => (u.id === id ? { ...u, ...updated } : u))
       );
     } catch {
-      alert("네트워크 오류가 발생했습니다.");
+      // 네트워크 오류 시 조용히 처리
     } finally {
       setUpdatingId(null);
     }
@@ -821,10 +813,6 @@ export default function AdminPage() {
                                           body: JSON.stringify({ status: "APPROVED" }),
                                         });
                                         if (res.ok) await fetchAccountChanges();
-                                        else {
-                                          const d = await res.json().catch(() => ({}));
-                                          alert(d?.error ?? "처리 실패");
-                                        }
                                       } finally {
                                         setProcessingId(null);
                                       }
@@ -845,10 +833,6 @@ export default function AdminPage() {
                                           body: JSON.stringify({ status: "REJECTED" }),
                                         });
                                         if (res.ok) await fetchAccountChanges();
-                                        else {
-                                          const d = await res.json().catch(() => ({}));
-                                          alert(d?.error ?? "처리 실패");
-                                        }
                                       } finally {
                                         setProcessingId(null);
                                       }

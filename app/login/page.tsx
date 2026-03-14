@@ -52,7 +52,6 @@ export default function LoginPage() {
         return;
       }
 
-      alert("승인되었습니다. 로그인되었습니다.");
       router.replace("/");
       router.refresh();
     } catch {

@@ -125,7 +125,6 @@ export default function Home() {
         return;
       }
 
-      alert("승인되었습니다. 로그인되었습니다.");
       window.location.href = "/";
     } catch {
       setError("네트워크 오류가 발생했습니다.");
@@ -138,28 +137,16 @@ export default function Home() {
   const amountValid = parsedAmount >= 10000 && parsedAmount % 10000 === 0;
 
   const handleBuyClick = () => {
-    if (parsedAmount < 10000) {
-      alert("금액을 입력해 주세요. (1만 원 이상)");
-      return;
-    }
-    if (parsedAmount % 10000 !== 0) {
-      alert("금액은 만 원 단위로만 입력 가능합니다. (예: 10000, 20000)");
-      return;
-    }
+    if (parsedAmount < 10000) return;
+    if (parsedAmount % 10000 !== 0) return;
     setConfirmMode("buy");
     setConfirmChecked(false);
     setConfirmOpen(true);
   };
 
   const handleSellClick = () => {
-    if (parsedAmount < 10000) {
-      alert("금액을 입력해 주세요. (1만 원 이상)");
-      return;
-    }
-    if (parsedAmount % 10000 !== 0) {
-      alert("금액은 만 원 단위로만 입력 가능합니다. (예: 10000, 20000)");
-      return;
-    }
+    if (parsedAmount < 10000) return;
+    if (parsedAmount % 10000 !== 0) return;
     setConfirmMode("sell");
     setConfirmChecked(false);
     setConfirmOpen(true);
@@ -180,17 +167,7 @@ export default function Home() {
         }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const raw = data?.error ?? "거래 신청에 실패했습니다.";
-        const msg =
-          res.status === 401
-            ? "로그인이 필요합니다. 다시 로그인한 뒤 시도해 주세요."
-            : raw === "usage_exceeded"
-              ? "호스팅 사용량 한도를 초과했습니다. 잠시 후 다시 시도하거나 관리자에게 문의하세요."
-              : raw;
-        alert(msg);
-        return;
-      }
+      if (!res.ok) return;
       const txn = data?.transaction;
       if (txn?.id) {
         setPendingTxnId(txn.id);
@@ -203,7 +180,7 @@ export default function Home() {
         window.location.href = "/dashboard";
       }
     } catch {
-      alert("네트워크 오류가 발생했습니다.");
+      // 네트워크 오류 시 조용히 처리
     } finally {
       setConfirmLoading(false);
     }
@@ -635,19 +612,15 @@ export default function Home() {
                       }),
                     });
                     const data = await res.json().catch(() => ({}));
-                    if (!res.ok) {
-                      alert(data?.error ?? "신청에 실패했습니다.");
-                      return;
-                    }
+                    if (!res.ok) return;
                     setAccountModalOpen(false);
                     setAccountHolder("");
                     setAccountBankName("");
                     setAccountNumber("");
                     setPendingAccountChange(true);
-                    alert("계좌 변경 신청이 접수되었습니다. 관리자 승인 후 반영됩니다.");
                     fetch("/api/me", { credentials: "include" }).then((r) => r.ok ? r.json() : null).then((d) => d && setProfile(d));
                   } catch {
-                    alert("네트워크 오류가 발생했습니다.");
+                    // 네트워크 오류 시 조용히 처리
                   } finally {
                     setAccountSubmitLoading(false);
                   }
