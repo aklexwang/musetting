@@ -182,12 +182,17 @@ export default function SignupPage() {
             <CardTitle className="text-xl font-semibold tracking-tight text-slate-50">
               {rejected ? "가입이 거부되었습니다." : approved ? "가입이 승인되었습니다." : "가입승인 대기중"}
             </CardTitle>
-            <CardDescription className="text-slate-400 text-sm leading-relaxed">
-              {rejected
-                ? "관리자에 의해 가입 요청이 거절되었습니다."
-                : approved
-                  ? "로그인 화면에서 로그인하실 수 있습니다."
-                  : "가입 요청이 완료되었습니다. 관리자 검토 후 승인되면 로그인하실 수 있습니다."}
+            <CardDescription className="text-slate-400 leading-relaxed">
+              {rejected ? (
+                "관리자에 의해 가입 요청이 거절되었습니다."
+              ) : approved ? (
+                "로그인 화면에서 로그인하실 수 있습니다."
+              ) : (
+                <span className="block text-center space-y-2 mt-2">
+                  <span className="block">가입 요청이 완료되었습니다. 관리자 검토 후 승인되면 로그인하실 수 있습니다.</span>
+                  <span className="block">승인 후 이 화면에서 자동으로 로그인 페이지로 이동합니다.</span>
+                </span>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="px-8 pb-8 pt-0">
@@ -207,11 +212,7 @@ export default function SignupPage() {
               >
                 확인
               </Button>
-            ) : (
-              <p className="text-center text-slate-400 text-sm">
-                승인 후 이 화면에서 자동으로 로그인 페이지로 이동합니다.
-              </p>
-            )}
+            ) : null}
           </CardContent>
         </Card>
       </div>

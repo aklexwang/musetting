@@ -581,8 +581,8 @@ export default function Home() {
         </Dialog>
 
         <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
-          <DialogContent className="max-w-[min(90vw,32rem)] rounded-2xl border border-slate-700/60 bg-slate-900 shadow-2xl text-slate-100 p-0 gap-0 overflow-hidden">
-            <div className="flex items-center justify-between border-b border-slate-700/50 px-6 py-4">
+          <DialogContent showCloseButton={false} className="max-w-[min(90vw,36rem)] rounded-2xl border border-slate-700/60 bg-slate-900 shadow-2xl text-slate-100 p-0 gap-0 overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-700/50 px-6 py-4 bg-slate-800/50">
               <h2 className="text-lg font-semibold text-white">거래내역</h2>
               <button
                 type="button"
@@ -595,68 +595,72 @@ export default function Home() {
                 </svg>
               </button>
             </div>
-            <div className="px-4 pt-3 pb-4 flex gap-1">
+            <div className="px-5 pt-4 pb-3 flex gap-2">
               <button
                 type="button"
                 onClick={() => setHistoryTab("BUY")}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${historyTab === "BUY" ? "bg-sky-600 text-white" : "bg-slate-700/60 text-slate-300 hover:bg-slate-700"}`}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${historyTab === "BUY" ? "bg-emerald-600 text-white shadow-sm" : "bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-slate-600/50"}`}
               >
                 구매
               </button>
               <button
                 type="button"
                 onClick={() => setHistoryTab("SELL")}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${historyTab === "SELL" ? "bg-sky-600 text-white" : "bg-slate-700/60 text-slate-300 hover:bg-slate-700"}`}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${historyTab === "SELL" ? "bg-sky-600 text-white shadow-sm" : "bg-slate-800/80 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-slate-600/50"}`}
               >
                 판매
               </button>
             </div>
-            <div className="px-4 pb-6 overflow-x-auto">
+            <div className="px-5 pb-6">
               {historyLoading ? (
-                <p className="py-8 text-center text-slate-500 text-sm">로딩 중...</p>
+                <div className="py-12 flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-2 border-slate-500 border-t-sky-500 rounded-full animate-spin" />
+                  <p className="text-slate-500 text-sm">로딩 중...</p>
+                </div>
+              ) : historyTxns.filter((t) => t.type === historyTab).length === 0 ? (
+                <div className="py-12 text-center">
+                  <p className="text-slate-500 text-sm">{historyTab === "BUY" ? "구매" : "판매"} 내역이 없습니다.</p>
+                </div>
               ) : (
-                <table className="w-full border-collapse text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-700/50">
-                      <th className="text-left py-3 px-3 text-slate-400 font-medium">신청 시간</th>
-                      <th className="text-right py-3 px-3 text-slate-400 font-medium">신청 금액</th>
-                      <th className="text-right py-3 px-3 text-slate-400 font-medium">완료 금액</th>
-                      <th className="text-left py-3 px-3 text-slate-400 font-medium">완료 시간</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-slate-300">
-                    {historyTxns
-                      .filter((t) => t.type === historyTab)
-                      .map((t) => {
-                        const d = new Date(t.createdAt);
-                        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-                        return (
-                          <tr key={t.id} className="border-b border-slate-700/40 hover:bg-slate-800/40">
-                            <td className="py-3 px-3 tabular-nums">{dateStr}</td>
-                            <td className="py-3 px-3 text-right tabular-nums">{t.amount.toLocaleString("ko-KR")}원</td>
-                            <td className="py-3 px-3 text-right tabular-nums">
-                              {t.status === "APPROVED" ? `${t.amount.toLocaleString("ko-KR")}원` : "-"}
-                            </td>
-                            <td className="py-3 px-3 tabular-nums">
-                              {t.status === "APPROVED" ? dateStr : "-"}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
-              )}
-              {!historyLoading && historyTxns.filter((t) => t.type === historyTab).length === 0 && (
-                <p className="py-8 text-center text-slate-500 text-sm">
-                  {historyTab === "BUY" ? "구매" : "판매"} 내역이 없습니다.
-                </p>
+                <div className="rounded-xl border border-slate-700/60 bg-slate-800/30 overflow-hidden max-h-[min(60vh,24rem)] overflow-y-auto">
+                  <table className="w-full border-collapse text-sm">
+                    <thead className="sticky top-0 bg-slate-800/95 backdrop-blur z-10">
+                      <tr className="border-b border-slate-600/60">
+                        <th className="text-left py-3.5 px-4 text-slate-400 font-medium text-xs uppercase tracking-wider">신청 시간</th>
+                        <th className="text-right py-3.5 px-4 text-slate-400 font-medium text-xs uppercase tracking-wider">신청 금액</th>
+                        <th className="text-right py-3.5 px-4 text-slate-400 font-medium text-xs uppercase tracking-wider">완료 금액</th>
+                        <th className="text-left py-3.5 px-4 text-slate-400 font-medium text-xs uppercase tracking-wider">완료 시간</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-slate-200 divide-y divide-slate-700/50">
+                      {historyTxns
+                        .filter((t) => t.type === historyTab)
+                        .map((t, i) => {
+                          const d = new Date(t.createdAt);
+                          const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                          return (
+                            <tr key={t.id} className={`hover:bg-slate-700/30 transition-colors ${i % 2 === 1 ? "bg-slate-800/20" : ""}`}>
+                              <td className="py-3.5 px-4 tabular-nums text-slate-300 text-xs">{dateStr}</td>
+                              <td className="py-3.5 px-4 text-right tabular-nums font-medium text-slate-100">{t.amount.toLocaleString("ko-KR")}원</td>
+                              <td className="py-3.5 px-4 text-right tabular-nums text-slate-300">
+                                {t.status === "APPROVED" ? <span className="text-emerald-400 font-medium">{t.amount.toLocaleString("ko-KR")}원</span> : <span className="text-slate-500">—</span>}
+                              </td>
+                              <td className="py-3.5 px-4 tabular-nums text-slate-300 text-xs">
+                                {t.status === "APPROVED" ? dateStr : <span className="text-slate-500">—</span>}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </DialogContent>
         </Dialog>
 
         <Dialog open={accountModalOpen} onOpenChange={setAccountModalOpen}>
-          <DialogContent className="max-w-[min(90vw,24rem)] rounded-2xl border border-slate-700/60 bg-slate-900 shadow-2xl text-slate-100 p-0 gap-0 overflow-hidden">
+          <DialogContent showCloseButton={false} className="max-w-[min(90vw,24rem)] rounded-2xl border border-slate-700/60 bg-slate-900 shadow-2xl text-slate-100 p-0 gap-0 overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-700/50 px-6 py-4">
               <h2 className="text-lg font-semibold text-white">계좌 입력</h2>
               <button
