@@ -48,11 +48,8 @@ export async function POST(
 
     const bot = new TelegramBot(token, { polling: false });
     const text = [
-      `신규 가입 유저(아이디: ${user.username})가 우리 회원이 맞습니까?`,
-      ``,
-      `은행: ${user.bankName}`,
-      `계좌번호: ${user.accountNumber}`,
-      `예금주: ${user.accountHolder}`,
+      `신규 가입 요청`,
+      `유저 [아이디: ${user.username}]가 BETEAST 회원이 맞습니까?`,
     ].join("\n");
     const keyboard = {
       inline_keyboard: [

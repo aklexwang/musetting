@@ -197,8 +197,8 @@ export async function POST(request: Request) {
         : "";
       const resultText =
         action === "approve"
-          ? `✅ 가입승인되었습니다.${memberInfo}`
-          : `❌ 회원거절${memberInfo}`;
+          ? `✅ BETEAST AXPAY 회원 가입 승인${memberInfo}`
+          : `❌ BETEAST AXPAY 회원 가입 거부${memberInfo}`;
       await bot.answerCallbackQuery(queryId);
       await bot.editMessageText(resultText, {
         chat_id: chatId,
