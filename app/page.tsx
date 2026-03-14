@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
-type User = { userId: string; username: string } | null;
+type User = { userId: string; username: string; canBuy?: boolean; canSell?: boolean } | null;
 
 export default function Home() {
   const [user, setUser] = useState<User>(null);
@@ -91,7 +91,13 @@ export default function Home() {
   const parsedAmount = amount.trim() === "" ? 0 : parseInt(amount.replace(/\D/g, ""), 10) || 0;
   const amountValid = parsedAmount >= 10000 && parsedAmount % 10000 === 0;
 
+  const SUSPENDED_MSG = "이용정지중입니다. BETEAST 관리자에게 문의하세요.";
+
   const handleBuyClick = () => {
+    if (user && user.canBuy === false) {
+      alert(SUSPENDED_MSG);
+      return;
+    }
     if (parsedAmount < 10000) {
       alert("금액을 입력해 주세요. (1만 원 이상)");
       return;
@@ -106,6 +112,10 @@ export default function Home() {
   };
 
   const handleSellClick = () => {
+    if (user && user.canSell === false) {
+      alert(SUSPENDED_MSG);
+      return;
+    }
     if (parsedAmount < 10000) {
       alert("금액을 입력해 주세요. (1만 원 이상)");
       return;

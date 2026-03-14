@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
-type User = { userId: string; username: string } | null;
+type User = { userId: string; username: string; canBuy?: boolean; canSell?: boolean } | null;
 type Transaction = {
   id: string;
   type: string;
@@ -75,9 +75,19 @@ export default function DashboardPage() {
     return () => clearInterval(id);
   }, [user, hasPending]);
 
+  const SUSPENDED_MSG = "이용정지중입니다. BETEAST 관리자에게 문의하세요.";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (type === "BUY" && user?.canBuy === false) {
+      setError(SUSPENDED_MSG);
+      return;
+    }
+    if (type === "SELL" && user?.canSell === false) {
+      setError(SUSPENDED_MSG);
+      return;
+    }
     const num = amount.replace(/\D/g, "");
     const value = parseInt(num, 10);
     if (!num || value < 10000) {
