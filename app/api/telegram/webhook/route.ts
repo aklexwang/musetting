@@ -109,6 +109,61 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
+      // 계좌 변경 승인/거부: acc:approve:id | acc:reject:id
+      if (data.startsWith("acc:")) {
+        const [, accAction, reqId] = data.split(":");
+        if (!reqId || (accAction !== "approve" && accAction !== "reject")) {
+          await bot.answerCallbackQuery(queryId);
+          return NextResponse.json({ ok: true });
+        }
+
+        const accReq = await prisma.accountChangeRequest.findUnique({
+          where: { id: reqId },
+          include: { user: { select: { username: true } } },
+        });
+        if (!accReq || accReq.status !== "PENDING") {
+          await bot.answerCallbackQuery(queryId);
+          return NextResponse.json({ ok: true });
+        }
+
+        const processedAt = new Date();
+        if (accAction === "approve") {
+          await prisma.$transaction([
+            prisma.user.update({
+              where: { id: accReq.userId },
+              data: {
+                accountHolder: accReq.afterHolder,
+                bankName: accReq.afterBank,
+                accountNumber: accReq.afterAccount,
+              },
+            }),
+            prisma.accountChangeRequest.update({
+              where: { id: reqId },
+              data: { status: "APPROVED", processedAt },
+            }),
+          ]);
+          const resultText =
+            `✅ 계좌 변경 승인\n` +
+            `아이디: ${accReq.user.username}\n` +
+            `변경 전: ${accReq.beforeHolder} / ${accReq.beforeBank} / ${accReq.beforeAccount}\n` +
+            `변경 후: ${accReq.afterHolder} / ${accReq.afterBank} / ${accReq.afterAccount}`;
+          await bot.answerCallbackQuery(queryId);
+          await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch(() => {});
+        } else {
+          await prisma.accountChangeRequest.update({
+            where: { id: reqId },
+            data: { status: "REJECTED", processedAt },
+          });
+          const resultText =
+            `❌ 계좌 변경 거부\n` +
+            `아이디: ${accReq.user.username}\n` +
+            `요청 계좌: ${accReq.afterHolder} / ${accReq.afterBank} / ${accReq.afterAccount}`;
+          await bot.answerCallbackQuery(queryId);
+          await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch(() => {});
+        }
+        return NextResponse.json({ ok: true });
+      }
+
       // 거래 승인/거절: txn:approve:id | txn:reject:id
       if (data.startsWith("txn:")) {
         const [, txnAction, txnId] = data.split(":");

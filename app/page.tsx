@@ -23,6 +23,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 type User = { userId: string; username: string; canBuy?: boolean; canSell?: boolean } | null;
 type Profile = { username: string; bankName: string; accountNumber: string; accountHolder: string } | null;
+type TxnItem = { id: string; type: string; amount: number; status: string; createdAt: string };
 
 export default function Home() {
   const [user, setUser] = useState<User>(null);
@@ -46,6 +47,19 @@ export default function Home() {
   const [rejectedMessage, setRejectedMessage] = useState<string | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [scanTime, setScanTime] = useState("");
+  /** 거래내역 모달 */
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyTab, setHistoryTab] = useState<"BUY" | "SELL">("BUY");
+  const [historyTxns, setHistoryTxns] = useState<TxnItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  /** 계좌 입력(변경요청) 모달 - 사진1 */
+  const [accountModalOpen, setAccountModalOpen] = useState(false);
+  const [accountHolder, setAccountHolder] = useState("");
+  const [accountBankName, setAccountBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [accountSubmitLoading, setAccountSubmitLoading] = useState(false);
+  /** 계좌 변경 신청 대기 중이면 true → "관리자가 승인중입니다." 표시 */
+  const [pendingAccountChange, setPendingAccountChange] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -60,13 +74,32 @@ export default function Home() {
   useEffect(() => {
     if (!user) {
       setProfile(null);
+      setPendingAccountChange(false);
       return;
     }
     fetch("/api/me", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => setProfile(data ?? null))
       .catch(() => setProfile(null));
+    fetch("/api/account-change-request", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : { hasPending: false }))
+      .then((data) => setPendingAccountChange(!!data?.hasPending))
+      .catch(() => setPendingAccountChange(false));
   }, [user]);
+
+  /** 거래내역 모달 열릴 때 목록 조회 */
+  useEffect(() => {
+    if (!historyOpen || !user) {
+      setHistoryTxns([]);
+      return;
+    }
+    setHistoryLoading(true);
+    fetch("/api/transactions", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : { transactions: [] }))
+      .then((data) => setHistoryTxns(data.transactions ?? []))
+      .catch(() => setHistoryTxns([]))
+      .finally(() => setHistoryLoading(false));
+  }, [historyOpen, user]);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -309,43 +342,56 @@ export default function Home() {
           alt="BETEAST"
           className="h-[42px] w-auto"
         />
-        <Link
-          href="/dashboard"
+        <button
+          type="button"
+          onClick={() => setHistoryOpen(true)}
           className="w-full max-w-[20rem] py-2.5 px-4 text-[0.9375rem] font-semibold text-white text-center rounded-xl border border-blue-400/45 bg-gradient-to-b from-[#1e3a5f] via-[#152238] to-[#1a2840] shadow-[0_1px_0_rgba(96,165,250,0.2)_inset,-1px_-1px_0_rgba(0,0,0,0.25),0_2px_8px_rgba(0,0,0,0.2)] hover:from-[#234872] hover:via-[#1a3050] hover:to-[#1e3a5f] hover:border-blue-300/50 transition-all"
         >
           거래내역
-        </Link>
+        </button>
         <div className="w-full max-w-[20rem] text-sm text-slate-400">
           <p className="text-center text-lg font-bold text-white bg-gradient-to-br from-blue-500/25 to-emerald-500/20 border border-blue-500/40 rounded-[10px] py-2.5 px-4 mb-3 tracking-wide">
             회원아이디 : {user?.username ?? ""}
           </p>
           <p className="text-center font-medium text-slate-400 mb-2">등록된 계좌</p>
-          <div className="border border-slate-700 rounded-lg bg-slate-800/50 overflow-hidden p-0">
-            <table className="w-full border-collapse">
-              <tbody className="text-slate-200">
-                <tr className="border-b border-slate-700">
-                  <th className="text-left py-2 px-3 text-slate-400 font-medium w-[5.5rem]">예금주 :</th>
-                  <td className="py-2 px-3">{profile?.accountHolder ?? "-"}</td>
-                </tr>
-                <tr className="border-b border-slate-700">
-                  <th className="text-left py-2 px-3 text-slate-400 font-medium w-[5.5rem]">은행명 :</th>
-                  <td className="py-2 px-3">{profile?.bankName ?? "-"}</td>
-                </tr>
-                <tr>
-                  <th className="text-left py-2 px-3 text-slate-400 font-medium w-[5.5rem]">계좌번호 :</th>
-                  <td className="py-2 px-3 font-mono">{profile?.accountNumber ?? "-"}</td>
-                </tr>
-              </tbody>
-            </table>
-            <div className="px-3 pb-3 pt-1">
-              <Link
-                href="/dashboard"
-                className="block w-full py-2.5 px-4 text-[0.9375rem] font-semibold text-white text-center rounded-xl border border-blue-400/45 bg-gradient-to-b from-[#1e3a5f] via-[#152238] to-[#1a2840] hover:from-[#234872] hover:via-[#1a3050] hover:to-[#1e3a5f] hover:border-blue-300/50 transition-all"
-              >
-                계좌번호 변경요청
-              </Link>
+          {pendingAccountChange ? (
+            <div className="border border-blue-500/40 rounded-xl bg-gradient-to-b from-[#1e3a5f] via-[#152238] to-[#1a2840] py-5 px-4 text-center">
+              <p className="text-white font-medium">관리자가 승인중입니다.</p>
             </div>
-          </div>
+          ) : (
+            <div className="border border-slate-700 rounded-lg bg-slate-800/50 overflow-hidden p-0">
+              <table className="w-full border-collapse">
+                <tbody className="text-slate-200">
+                  <tr className="border-b border-slate-700">
+                    <th className="text-left py-2 px-3 text-slate-400 font-medium w-[5.5rem]">예금주 :</th>
+                    <td className="py-2 px-3">{profile?.accountHolder ?? "-"}</td>
+                  </tr>
+                  <tr className="border-b border-slate-700">
+                    <th className="text-left py-2 px-3 text-slate-400 font-medium w-[5.5rem]">은행명 :</th>
+                    <td className="py-2 px-3">{profile?.bankName ?? "-"}</td>
+                  </tr>
+                  <tr>
+                    <th className="text-left py-2 px-3 text-slate-400 font-medium w-[5.5rem]">계좌번호 :</th>
+                    <td className="py-2 px-3 font-mono">{profile?.accountNumber ?? "-"}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div className="px-3 pb-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccountHolder("");
+                    setAccountBankName("");
+                    setAccountNumber("");
+                    setAccountModalOpen(true);
+                  }}
+                  className="w-full py-2.5 px-4 text-[0.9375rem] font-semibold text-white text-center rounded-xl border border-slate-500/50 bg-slate-600/80 hover:bg-slate-600 transition-colors"
+                >
+                  계좌번호 변경요청
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         <div className="flex flex-col items-center gap-6 w-full max-w-[20rem]">
           <div className="w-full flex items-center justify-center">
@@ -431,6 +477,185 @@ export default function Home() {
                 {confirmLoading ? "신청 중..." : pendingTxnId ? "승인 대기 중..." : "확인"}
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+          <DialogContent className="max-w-[min(90vw,32rem)] rounded-2xl border border-slate-700/60 bg-slate-900 shadow-2xl text-slate-100 p-0 gap-0 overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-700/50 px-6 py-4">
+              <h2 className="text-lg font-semibold text-white">거래내역</h2>
+              <button
+                type="button"
+                onClick={() => setHistoryOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/60 transition-colors"
+                aria-label="닫기"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="px-4 pt-3 pb-4 flex gap-1">
+              <button
+                type="button"
+                onClick={() => setHistoryTab("BUY")}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${historyTab === "BUY" ? "bg-sky-600 text-white" : "bg-slate-700/60 text-slate-300 hover:bg-slate-700"}`}
+              >
+                구매
+              </button>
+              <button
+                type="button"
+                onClick={() => setHistoryTab("SELL")}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${historyTab === "SELL" ? "bg-sky-600 text-white" : "bg-slate-700/60 text-slate-300 hover:bg-slate-700"}`}
+              >
+                판매
+              </button>
+            </div>
+            <div className="px-4 pb-6 overflow-x-auto">
+              {historyLoading ? (
+                <p className="py-8 text-center text-slate-500 text-sm">로딩 중...</p>
+              ) : (
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-700/50">
+                      <th className="text-left py-3 px-3 text-slate-400 font-medium">신청 시간</th>
+                      <th className="text-right py-3 px-3 text-slate-400 font-medium">신청 금액</th>
+                      <th className="text-right py-3 px-3 text-slate-400 font-medium">완료 금액</th>
+                      <th className="text-left py-3 px-3 text-slate-400 font-medium">완료 시간</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-slate-300">
+                    {historyTxns
+                      .filter((t) => t.type === historyTab)
+                      .map((t) => {
+                        const d = new Date(t.createdAt);
+                        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                        return (
+                          <tr key={t.id} className="border-b border-slate-700/40 hover:bg-slate-800/40">
+                            <td className="py-3 px-3 tabular-nums">{dateStr}</td>
+                            <td className="py-3 px-3 text-right tabular-nums">{t.amount.toLocaleString("ko-KR")}원</td>
+                            <td className="py-3 px-3 text-right tabular-nums">
+                              {t.status === "APPROVED" ? `${t.amount.toLocaleString("ko-KR")}원` : "-"}
+                            </td>
+                            <td className="py-3 px-3 tabular-nums">
+                              {t.status === "APPROVED" ? dateStr : "-"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              )}
+              {!historyLoading && historyTxns.filter((t) => t.type === historyTab).length === 0 && (
+                <p className="py-8 text-center text-slate-500 text-sm">
+                  {historyTab === "BUY" ? "구매" : "판매"} 내역이 없습니다.
+                </p>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={accountModalOpen} onOpenChange={setAccountModalOpen}>
+          <DialogContent className="max-w-[min(90vw,24rem)] rounded-2xl border border-slate-700/60 bg-slate-900 shadow-2xl text-slate-100 p-0 gap-0 overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-700/50 px-6 py-4">
+              <h2 className="text-lg font-semibold text-white">계좌 입력</h2>
+              <button
+                type="button"
+                onClick={() => setAccountModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/60 transition-colors"
+                aria-label="닫기"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="acc-holder" className="text-slate-200">예금주</Label>
+                <Input
+                  id="acc-holder"
+                  type="text"
+                  autoComplete="off"
+                  placeholder="예금주명 입력"
+                  value={accountHolder}
+                  onChange={(e) => setAccountHolder(e.target.value)}
+                  className="bg-slate-800/60 border-slate-600 text-slate-100 placeholder:text-slate-500 rounded-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="acc-bank" className="text-slate-200">은행명</Label>
+                <Input
+                  id="acc-bank"
+                  type="text"
+                  autoComplete="off"
+                  placeholder="은행명 입력"
+                  value={accountBankName}
+                  onChange={(e) => setAccountBankName(e.target.value)}
+                  className="bg-slate-800/60 border-slate-600 text-slate-100 placeholder:text-slate-500 rounded-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="acc-number" className="text-slate-200">계좌번호</Label>
+                <Input
+                  id="acc-number"
+                  type="text"
+                  autoComplete="off"
+                  placeholder="계좌번호 입력"
+                  value={accountNumber}
+                  onChange={(e) => setAccountNumber(e.target.value)}
+                  className="bg-slate-800/60 border-slate-600 text-slate-100 placeholder:text-slate-500 rounded-lg"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 px-6 pb-6 pt-2 border-t border-slate-700/50">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 bg-slate-700/80 border-slate-600 text-slate-200 hover:bg-slate-600 hover:text-white"
+                onClick={() => setAccountModalOpen(false)}
+              >
+                취소
+              </Button>
+              <Button
+                type="button"
+                className="flex-1 bg-sky-600 hover:bg-sky-500 text-white border-0"
+                disabled={accountSubmitLoading || !accountHolder.trim() || !accountBankName.trim() || !accountNumber.trim()}
+                onClick={async () => {
+                  setAccountSubmitLoading(true);
+                  try {
+                    const res = await fetch("/api/account-change-request", {
+                      method: "POST",
+                      credentials: "include",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        accountHolder: accountHolder.trim(),
+                        bankName: accountBankName.trim(),
+                        accountNumber: accountNumber.trim(),
+                      }),
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                      alert(data?.error ?? "신청에 실패했습니다.");
+                      return;
+                    }
+                    setAccountModalOpen(false);
+                    setAccountHolder("");
+                    setAccountBankName("");
+                    setAccountNumber("");
+                    setPendingAccountChange(true);
+                    alert("계좌 변경 신청이 접수되었습니다. 관리자 승인 후 반영됩니다.");
+                    fetch("/api/me", { credentials: "include" }).then((r) => r.ok ? r.json() : null).then((d) => d && setProfile(d));
+                  } catch {
+                    alert("네트워크 오류가 발생했습니다.");
+                  } finally {
+                    setAccountSubmitLoading(false);
+                  }
+                }}
+              >
+                {accountSubmitLoading ? "처리 중..." : "확인"}
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

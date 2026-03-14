@@ -25,7 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 type UserStatus = "PENDING" | "APPROVED" | "REJECTED";
-type AdminMenu = "현황판" | "회원목록" | "구매" | "판매";
+type AdminMenu = "현황판" | "회원목록" | "구매" | "판매" | "계좌 변경";
 
 interface AdminUser {
   id: string;
@@ -51,6 +51,21 @@ interface AdminTransaction {
   user: { username: string };
 }
 
+interface AccountChangeRequestItem {
+  id: string;
+  userId: string;
+  beforeHolder: string;
+  beforeBank: string;
+  beforeAccount: string;
+  afterHolder: string;
+  afterBank: string;
+  afterAccount: string;
+  status: string;
+  createdAt: string;
+  processedAt: string | null;
+  user: { id: string; username: string };
+}
+
 const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
   { value: "PENDING", label: "대기" },
   { value: "APPROVED", label: "승인" },
@@ -62,6 +77,7 @@ const MENU_ITEMS: { id: AdminMenu; label: string }[] = [
   { id: "회원목록", label: "회원목록" },
   { id: "구매", label: "구매" },
   { id: "판매", label: "판매" },
+  { id: "계좌 변경", label: "계좌 변경" },
 ];
 
 export default function AdminPage() {
@@ -77,6 +93,9 @@ export default function AdminPage() {
   const [deletingPending, setDeletingPending] = useState(false);
   const [listModal, setListModal] = useState<"approved_rejected" | "buy" | "sell" | null>(null);
   const [memberSearch, setMemberSearch] = useState("");
+  const [accountChanges, setAccountChanges] = useState<AccountChangeRequestItem[]>([]);
+  const [accountChangesLoading, setAccountChangesLoading] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const pendingUsers = users.filter((u) => u.status === "PENDING");
   const approvedAndRejectedUsers = users.filter((u) => u.status === "APPROVED" || u.status === "REJECTED");
@@ -186,10 +205,28 @@ export default function AdminPage() {
     }
   };
 
+  const fetchAccountChanges = async () => {
+    setAccountChangesLoading(true);
+    try {
+      const res = await fetch("/api/admin/account-change-requests", { cache: "no-store" });
+      const data = await res.json().catch(() => []);
+      if (Array.isArray(data)) setAccountChanges(data);
+      else setAccountChanges([]);
+    } catch {
+      setAccountChanges([]);
+    } finally {
+      setAccountChangesLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
     fetchTransactions();
   }, []);
+
+  useEffect(() => {
+    if (menu === "계좌 변경") fetchAccountChanges();
+  }, [menu]);
 
   const updateUser = async (
     id: string,
@@ -705,6 +742,136 @@ export default function AdminPage() {
             </div>
             {renderTxnTable(filteredSellTxns, "판매 신청 내역")}
           </>
+        )}
+
+        {menu === "계좌 변경" && (
+          <Card className="rounded-2xl border border-slate-700/50 bg-slate-950/40 overflow-hidden">
+            <CardHeader className="border-b border-slate-700/50 px-6 py-5 text-center">
+              <CardTitle className="text-slate-100 font-semibold text-base">계좌 변경</CardTitle>
+              <CardDescription className="text-slate-400 text-sm mt-0.5">회원 계좌 변경 신청 및 처리 내역</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {accountChangesLoading ? (
+                <div className="flex justify-center py-16 text-slate-400 text-sm">로딩 중...</div>
+              ) : accountChanges.length === 0 ? (
+                <p className="py-12 text-center text-slate-500 text-sm">계좌 변경 신청 내역이 없습니다.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-slate-700/50 hover:bg-transparent">
+                        <TableHead colSpan={5} className="text-slate-400 font-medium text-xs uppercase tracking-wider px-4 py-3 text-center border-r border-slate-700/50">
+                          변경 전 계좌
+                        </TableHead>
+                        <TableHead colSpan={5} className="text-slate-400 font-medium text-xs uppercase tracking-wider px-4 py-3 text-center">
+                          변경 후 계좌
+                        </TableHead>
+                      </TableRow>
+                      <TableRow className="border-slate-700/50 hover:bg-transparent">
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">아이디</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">신청 일시</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">이름</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">은행명</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center border-r border-slate-700/50">계좌번호</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">이름</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">은행명</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">계좌번호</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">변경 일시</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">상태</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {accountChanges.map((r) => {
+                        const appliedAt = r.processedAt ? new Date(r.processedAt) : null;
+                        const dateStr = (d: Date) =>
+                          `${String(d.getMonth() + 1).padStart(2, "0")}. ${String(d.getDate()).padStart(2, "0")}. ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                        const statusLabel = r.status === "APPROVED" ? "완료" : r.status === "REJECTED" ? "거부" : "대기";
+                        const statusClass =
+                          r.status === "APPROVED"
+                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                            : r.status === "REJECTED"
+                              ? "bg-red-500/20 text-red-300 border-red-500/40"
+                              : "bg-amber-500/20 text-amber-300 border-amber-500/40";
+                        return (
+                          <TableRow key={r.id} className="border-slate-700/40 hover:bg-slate-800/40">
+                            <TableCell className="text-slate-200 text-sm px-3 py-2 text-center">{r.user?.username ?? "-"}</TableCell>
+                            <TableCell className="text-slate-400 text-sm px-3 py-2 text-center tabular-nums">{dateStr(new Date(r.createdAt))}</TableCell>
+                            <TableCell className="text-slate-400 text-sm px-3 py-2 text-center">{r.beforeHolder}</TableCell>
+                            <TableCell className="text-slate-400 text-sm px-3 py-2 text-center">{r.beforeBank}</TableCell>
+                            <TableCell className="text-slate-400 text-sm px-3 py-2 text-center font-mono border-r border-slate-700/40">{r.beforeAccount}</TableCell>
+                            <TableCell className="text-slate-400 text-sm px-3 py-2 text-center">{r.afterHolder}</TableCell>
+                            <TableCell className="text-slate-400 text-sm px-3 py-2 text-center">{r.afterBank}</TableCell>
+                            <TableCell className="text-slate-400 text-sm px-3 py-2 text-center font-mono">{r.afterAccount}</TableCell>
+                            <TableCell className="text-slate-400 text-sm px-3 py-2 text-center tabular-nums">
+                              {appliedAt ? dateStr(appliedAt) : "-"}
+                            </TableCell>
+                            <TableCell className="px-3 py-2 text-center">
+                              {r.status === "PENDING" ? (
+                                <span className="flex items-center justify-center gap-1">
+                                  <button
+                                    type="button"
+                                    disabled={processingId === r.id}
+                                    className="h-7 px-2 text-xs font-medium rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+                                    onClick={async () => {
+                                      setProcessingId(r.id);
+                                      try {
+                                        const res = await fetch(`/api/admin/account-change-requests/${r.id}`, {
+                                          method: "PATCH",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ status: "APPROVED" }),
+                                        });
+                                        if (res.ok) await fetchAccountChanges();
+                                        else {
+                                          const d = await res.json().catch(() => ({}));
+                                          alert(d?.error ?? "처리 실패");
+                                        }
+                                      } finally {
+                                        setProcessingId(null);
+                                      }
+                                    }}
+                                  >
+                                    승인
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={processingId === r.id}
+                                    className="h-7 px-2 text-xs font-medium rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                                    onClick={async () => {
+                                      setProcessingId(r.id);
+                                      try {
+                                        const res = await fetch(`/api/admin/account-change-requests/${r.id}`, {
+                                          method: "PATCH",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ status: "REJECTED" }),
+                                        });
+                                        if (res.ok) await fetchAccountChanges();
+                                        else {
+                                          const d = await res.json().catch(() => ({}));
+                                          alert(d?.error ?? "처리 실패");
+                                        }
+                                      } finally {
+                                        setProcessingId(null);
+                                      }
+                                    }}
+                                  >
+                                    거부
+                                  </button>
+                                </span>
+                              ) : (
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${statusClass}`}>
+                                  {statusLabel}
+                                </span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

@@ -26,7 +26,8 @@ model User {
   suspended      Boolean       @default(false)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
-  transactions   Transaction[]
+  transactions           Transaction[]
+  accountChangeRequests AccountChangeRequest[]
 }
 
 model Transaction {
@@ -40,4 +41,19 @@ model Transaction {
   axpayOrderId  String?  // AxPay 로그인 API 성공 시 order_id
   axpayUrl      String?  // AxPay 로그인 API 성공 시 url (iframe용)
   createdAt     DateTime @default(now())
+}
+
+model AccountChangeRequest {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  beforeHolder    String   // 변경 전 예금주
+  beforeBank      String   // 변경 전 은행명
+  beforeAccount   String   // 변경 전 계좌번호
+  afterHolder     String   // 변경 후 예금주
+  afterBank       String   // 변경 후 은행명
+  afterAccount    String   // 변경 후 계좌번호
+  status          String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  createdAt       DateTime @default(now())
+  processedAt     DateTime? // 승인/거부 처리 일시
 }
