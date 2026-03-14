@@ -41,27 +41,27 @@ export async function POST(request: Request) {
     );
   }
 
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: session.userId },
-      select: { canBuy: true, canSell: true },
-    });
-    if (!user) {
-      return NextResponse.json({ error: "회원 정보를 찾을 수 없습니다." }, { status: 404 });
-    }
-    if (type === "BUY" && !user.canBuy) {
-      return NextResponse.json(
-        { error: "이 회원은 구매(충전) 신청을 할 수 없습니다. 관리자에게 문의하세요." },
-        { status: 400 }
-      );
-    }
-    if (type === "SELL" && !user.canSell) {
-      return NextResponse.json(
-        { error: "이 회원은 판매(출금) 신청을 할 수 없습니다. 관리자에게 문의하세요." },
-        { status: 400 }
-      );
-    }
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { canBuy: true, canSell: true },
+  });
+  if (!user) {
+    return NextResponse.json({ error: "회원 정보를 찾을 수 없습니다." }, { status: 404 });
+  }
+  if (type === "BUY" && !user.canBuy) {
+    return NextResponse.json(
+      { error: "이용정지중입니다. BETEAST 관리자에게 문의하세요." },
+      { status: 403 }
+    );
+  }
+  if (type === "SELL" && !user.canSell) {
+    return NextResponse.json(
+      { error: "이용정지중입니다. BETEAST 관리자에게 문의하세요." },
+      { status: 403 }
+    );
+  }
 
+  try {
     const txn = await prisma.transaction.create({
       data: {
         userId: session.userId,
