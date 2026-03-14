@@ -176,7 +176,7 @@ export async function POST(request: Request) {
 
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { username: true, accountHolder: true, createdAt: true },
+        select: { username: true, bankName: true, accountNumber: true, accountHolder: true, createdAt: true },
       });
 
       const newStatus = action === "approve" ? "APPROVED" : "REJECTED";
@@ -193,7 +193,7 @@ export async function POST(request: Request) {
         return `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, "0")}. ${String(d.getDate()).padStart(2, "0")}. ${ampm} ${h}:${min}`;
       };
       const memberInfo = user
-        ? `\n회원 아이디: ${user.username}\n예금주: ${user.accountHolder}${user.createdAt ? `\n가입날짜: ${formatSignupDate(user.createdAt)}` : ""}`
+        ? `\n회원 아이디: ${user.username}\n은행명: ${user.bankName}\n계좌번호: ${user.accountNumber}\n예금주: ${user.accountHolder}${user.createdAt ? `\n가입날짜: ${formatSignupDate(user.createdAt)}` : ""}`
         : "";
       const resultText =
         action === "approve"
