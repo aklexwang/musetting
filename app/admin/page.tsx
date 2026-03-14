@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -24,6 +24,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 
 type UserStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AdminMenu = "현황판" | "회원가입" | "구매" | "판매";
@@ -72,12 +86,56 @@ export default function AdminPage() {
   const [txnLoading, setTxnLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [expandedSignup, setExpandedSignup] = useState(false);
+  const [expandedTxn, setExpandedTxn] = useState(false);
 
-  const pendingCount = users.filter((u) => u.status === "PENDING").length;
-  const pendingTxns = transactions.filter((t) => t.status === "PENDING");
-  const buyTxns = transactions.filter((t) => t.type === "BUY");
-  const sellTxns = transactions.filter((t) => t.type === "SELL");
+  const pendingUsers = useMemo(() => users.filter((u) => u.status === "PENDING"), [users]);
+  const pendingTxns = useMemo(() => transactions.filter((t) => t.status === "PENDING"), [transactions]);
+  const buyTxns = useMemo(() => transactions.filter((t) => t.type === "BUY"), [transactions]);
+  const sellTxns = useMemo(() => transactions.filter((t) => t.type === "SELL"), [transactions]);
+  const pendingCount = pendingUsers.length;
   const approvedCount = users.filter((u) => u.status === "APPROVED").length;
+
+  const barChartData = useMemo(() => [
+    { name: "가입대기", count: pendingCount, fill: "#f97316" },
+    { name: "거래대기", count: pendingTxns.length, fill: "#eab308" },
+    { name: "승인회원", count: approvedCount, fill: "#ef4444" },
+    { name: "구매", count: buyTxns.length, fill: "#22c55e" },
+    { name: "판매", count: sellTxns.length, fill: "#a855f7" },
+  ], [pendingCount, pendingTxns.length, approvedCount, buyTxns.length, sellTxns.length]);
+
+  const pieChartData = useMemo(() => {
+    const buy = buyTxns.length;
+    const sell = sellTxns.length;
+    if (buy === 0 && sell === 0) return [{ name: "구매", value: 1, color: "#22c55e" }, { name: "판매", value: 1, color: "#a855f7" }];
+    return [
+      { name: "구매", value: buy || 1, color: "#22c55e" },
+      { name: "판매", value: sell || 1, color: "#a855f7" },
+    ];
+  }, [buyTxns.length, sellTxns.length]);
+
+  const areaChartData = useMemo(() => {
+    const days = 7;
+    const now = new Date();
+    return Array.from({ length: days }, (_, i) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (days - 1 - i));
+      const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
+      const dayStart = new Date(d);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(d);
+      dayEnd.setHours(23, 59, 59, 999);
+      const signups = users.filter((u) => {
+        const t = new Date(u.createdAt);
+        return t >= dayStart && t <= dayEnd;
+      }).length;
+      const txns = transactions.filter((t) => {
+        const ct = new Date(t.createdAt);
+        return ct >= dayStart && ct <= dayEnd;
+      }).length;
+      return { date: dateStr, 가입: signups, 거래: txns, total: signups + txns };
+    });
+  }, [users, transactions]);
 
   const fetchUsers = async () => {
     setFetchError(null);
@@ -240,39 +298,206 @@ export default function AdminPage() {
 
         {menu === "현황판" && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="overflow-hidden border-0 bg-gradient-to-br from-orange-500 to-red-600 text-white shadow-lg">
-                <CardContent className="p-5">
-                  <p className="text-3xl font-bold tabular-nums">{pendingCount}</p>
-                  <p className="text-white/90 text-sm mt-1">가입 대기</p>
-                </CardContent>
-              </Card>
-              <Card className="overflow-hidden border-0 bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg">
-                <CardContent className="p-5">
-                  <p className="text-3xl font-bold tabular-nums">{pendingTxns.length}</p>
-                  <p className="text-white/90 text-sm mt-1">거래 대기</p>
-                </CardContent>
-              </Card>
-              <Card className="overflow-hidden border-0 bg-gradient-to-br from-red-500 to-orange-600 text-white shadow-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <button
+                type="button"
+                onClick={() => setExpandedSignup((v) => !v)}
+                className="text-left rounded-xl overflow-hidden border-0 bg-gradient-to-br from-orange-500 to-red-600 text-white shadow-xl hover:shadow-orange-500/20 hover:scale-[1.02] transition-all duration-200"
+              >
+                <Card className="border-0 bg-transparent shadow-none">
+                  <CardContent className="p-5 relative">
+                    <span className="absolute top-2 right-2 text-white/70 text-xs">클릭 시 목록</span>
+                    <p className="text-3xl font-bold tabular-nums">{pendingCount}</p>
+                    <p className="text-white/90 text-sm mt-1">가입 대기</p>
+                  </CardContent>
+                </Card>
+              </button>
+              <button
+                type="button"
+                onClick={() => setExpandedTxn((v) => !v)}
+                className="text-left rounded-xl overflow-hidden border-0 bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-xl hover:shadow-amber-500/20 hover:scale-[1.02] transition-all duration-200"
+              >
+                <Card className="border-0 bg-transparent shadow-none">
+                  <CardContent className="p-5 relative">
+                    <span className="absolute top-2 right-2 text-white/70 text-xs">클릭 시 목록</span>
+                    <p className="text-3xl font-bold tabular-nums">{pendingTxns.length}</p>
+                    <p className="text-white/90 text-sm mt-1">거래 대기</p>
+                  </CardContent>
+                </Card>
+              </button>
+              <Card className="overflow-hidden border-0 bg-gradient-to-br from-red-500 to-orange-600 text-white shadow-xl rounded-xl">
                 <CardContent className="p-5">
                   <p className="text-3xl font-bold tabular-nums">{approvedCount}</p>
                   <p className="text-white/90 text-sm mt-1">승인 회원</p>
                 </CardContent>
               </Card>
-              <Card className="overflow-hidden border-0 bg-gradient-to-br from-violet-600 to-purple-700 text-white shadow-lg">
+              <Card className="overflow-hidden border-0 bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-xl rounded-xl">
                 <CardContent className="p-5">
-                  <p className="text-3xl font-bold tabular-nums">{transactions.length}</p>
-                  <p className="text-white/90 text-sm mt-1">총 거래</p>
+                  <p className="text-3xl font-bold tabular-nums">{buyTxns.length}</p>
+                  <p className="text-white/90 text-sm mt-1">구매</p>
+                </CardContent>
+              </Card>
+              <Card className="overflow-hidden border-0 bg-gradient-to-br from-violet-600 to-purple-700 text-white shadow-xl rounded-xl">
+                <CardContent className="p-5">
+                  <p className="text-3xl font-bold tabular-nums">{sellTxns.length}</p>
+                  <p className="text-white/90 text-sm mt-1">판매</p>
                 </CardContent>
               </Card>
             </div>
+
+            {expandedSignup && (
+              <Card className="bg-slate-900/90 border-slate-700 rounded-xl overflow-hidden">
+                <CardHeader className="border-b border-slate-700 py-3">
+                  <CardTitle className="text-base text-slate-100">가입 대기 목록</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-3">
+                  {loading ? (
+                    <p className="text-slate-400 py-4 text-center text-sm">로딩 중...</p>
+                  ) : pendingUsers.length === 0 ? (
+                    <p className="text-slate-500 py-4 text-center text-sm">대기 중인 가입이 없습니다.</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-slate-700 hover:bg-transparent">
+                          <TableHead className="text-slate-300 font-medium">아이디</TableHead>
+                          <TableHead className="text-slate-300 font-medium">은행</TableHead>
+                          <TableHead className="text-slate-300 font-medium">예금주</TableHead>
+                          <TableHead className="text-slate-300 font-medium">가입일시</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pendingUsers.map((u) => (
+                          <TableRow key={u.id} className="border-slate-700 hover:bg-slate-800/50">
+                            <TableCell className="text-slate-200 font-medium">{u.username}</TableCell>
+                            <TableCell className="text-slate-400">{u.bankName}</TableCell>
+                            <TableCell className="text-slate-400">{u.accountHolder}</TableCell>
+                            <TableCell className="text-slate-500 text-sm">
+                              {new Date(u.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {expandedTxn && (
+              <Card className="bg-slate-900/90 border-slate-700 rounded-xl overflow-hidden">
+                <CardHeader className="border-b border-slate-700 py-3">
+                  <CardTitle className="text-base text-slate-100">거래 대기 목록</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-3">
+                  {txnLoading ? (
+                    <p className="text-slate-400 py-4 text-center text-sm">로딩 중...</p>
+                  ) : pendingTxns.length === 0 ? (
+                    <p className="text-slate-500 py-4 text-center text-sm">대기 중인 거래가 없습니다.</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-slate-700 hover:bg-transparent">
+                          <TableHead className="text-slate-300 font-medium">아이디</TableHead>
+                          <TableHead className="text-slate-300 font-medium">유형</TableHead>
+                          <TableHead className="text-slate-300 font-medium">금액</TableHead>
+                          <TableHead className="text-slate-300 font-medium">신청일시</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pendingTxns.map((t) => (
+                          <TableRow key={t.id} className="border-slate-700 hover:bg-slate-800/50">
+                            <TableCell className="text-slate-200 font-medium">{t.user?.username ?? "-"}</TableCell>
+                            <TableCell className="text-slate-400">{t.type === "BUY" ? "구매" : "판매"}</TableCell>
+                            <TableCell className="text-slate-300 font-mono">{t.amount.toLocaleString("ko-KR")}원</TableCell>
+                            <TableCell className="text-slate-500 text-sm">
+                              {new Date(t.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-slate-900/80 border-slate-700 rounded-xl overflow-hidden">
+                <CardHeader className="border-b border-slate-700 py-3">
+                  <CardTitle className="text-base text-slate-100">Statistics</CardTitle>
+                  <CardDescription className="text-slate-400 text-xs">항목별 건수</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-4 h-[220px] min-h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={180}>
+                    <BarChart data={barChartData} layout="vertical" margin={{ left: 8, right: 8 }}>
+                      <XAxis type="number" stroke="#64748b" fontSize={11} />
+                      <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={11} width={70} />
+                      <Tooltip contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #475569", borderRadius: "8px" }} />
+                      <Bar dataKey="count" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+              <Card className="bg-slate-900/80 border-slate-700 rounded-xl overflow-hidden">
+                <CardHeader className="border-b border-slate-700 py-3">
+                  <CardTitle className="text-base text-slate-100">Budget</CardTitle>
+                  <CardDescription className="text-slate-400 text-xs">구매 / 판매 비율</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-4 h-[220px] min-h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={180}>
+                    <PieChart>
+                      <Pie
+                        data={pieChartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={75}
+                        paddingAngle={2}
+                        dataKey="value"
+                        label={({ name, value }) => `${name} ${value}`}
+                      >
+                        {pieChartData.map((entry, i) => (
+                          <Cell key={i} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #475569", borderRadius: "8px" }} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="bg-slate-900/80 border-slate-700 rounded-xl overflow-hidden">
+              <CardHeader className="border-b border-slate-700 py-3">
+                <CardTitle className="text-base text-slate-100">Subscribers</CardTitle>
+                <CardDescription className="text-slate-400 text-xs">최근 7일 가입·거래 추이</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4 h-[200px] min-h-[200px]">
+                <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={160}>
+                  <AreaChart data={areaChartData}>
+                    <defs>
+                      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f97316" stopOpacity={0.4} />
+                        <stop offset="100%" stopColor="#f97316" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="date" stroke="#64748b" fontSize={11} />
+                    <YAxis stroke="#64748b" fontSize={11} />
+                    <Tooltip contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #475569", borderRadius: "8px" }} />
+                    <Area type="monotone" dataKey="total" stroke="#f97316" fill="url(#areaGrad)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
             {pendingCount > 0 && !loading && (
-              <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-amber-200 text-sm">
+              <div className="rounded-xl border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-amber-200 text-sm">
                 가입 요청 <strong>{pendingCount}건</strong> — 텔레그램에서 [승인]/[거절] 처리해 주세요.
               </div>
             )}
             {pendingTxns.length > 0 && !txnLoading && (
-              <div className="rounded-lg border border-sky-500/50 bg-sky-500/10 px-4 py-3 text-sky-200 text-sm">
+              <div className="rounded-xl border border-sky-500/50 bg-sky-500/10 px-4 py-3 text-sky-200 text-sm">
                 거래 대기 <strong>{pendingTxns.length}건</strong> — 텔레그램에서 [승인]/[거절] 처리하세요.
               </div>
             )}
