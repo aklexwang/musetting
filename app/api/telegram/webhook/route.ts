@@ -100,18 +100,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
-      // Admin 링크 열기 + 메시지 삭제 (사진1번 자동 삭제)
-      if (data === "admin_open") {
-        try {
-          const adminUrl = "https://papaya-sorbet-3708f7.netlify.app/admin";
-          await bot.answerCallbackQuery(queryId, { url: adminUrl });
-          await bot.deleteMessage(chatId, messageId).catch((e) => console.error("[webhook] deleteMessage 실패:", e));
-        } catch (e) {
-          console.error("[webhook] admin_open 처리 실패:", e);
-        }
-        return NextResponse.json({ ok: true });
-      }
-
       // 목록 조회 (인라인 콜백): list:signup | list:buy | list:sell
       if (data.startsWith("list:")) {
         const listType = data.slice(5) as "signup" | "buy" | "sell";
@@ -241,11 +229,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 키보드 버튼 "Admin" 탭 → 인라인 버튼 전달 (callback_data 사용 → 탭 시 링크 열고 해당 메시지 자동 삭제)
+    // 키보드 버튼 "Admin" 탭 → 인라인 URL 버튼 (탭 시 서버 없이 바로 링크 열림)
     if (body.message?.text === "Admin") {
       const chatId = body.message.chat.id;
+      const adminUrl = "https://papaya-sorbet-3708f7.netlify.app/admin";
       const reply_markup = {
-        inline_keyboard: [[{ text: "Admin", callback_data: "admin_open" }]],
+        inline_keyboard: [[{ text: "Admin", url: adminUrl }]],
       };
       await bot.sendMessage(chatId, "관리자 페이지", {
         reply_markup: reply_markup as unknown as Record<string, unknown>,
