@@ -34,25 +34,24 @@ export async function PATCH(
 
     const processedAt = new Date();
 
+    const processedVia = "admin";
     if (status === "APPROVED") {
-      await prisma.$transaction([
-        prisma.user.update({
-          where: { id: req.userId },
-          data: {
-            accountHolder: req.afterHolder,
-            bankName: req.afterBank,
-            accountNumber: req.afterAccount,
-          },
-        }),
-        prisma.accountChangeRequest.update({
-          where: { id },
-          data: { status: "APPROVED", processedAt },
-        }),
-      ]);
+      await prisma.user.update({
+        where: { id: req.userId },
+        data: {
+          accountHolder: req.afterHolder,
+          bankName: req.afterBank,
+          accountNumber: req.afterAccount,
+        },
+      });
+      await prisma.accountChangeRequest.update({
+        where: { id },
+        data: { status: "APPROVED", processedAt, processedVia },
+      });
     } else {
       await prisma.accountChangeRequest.update({
         where: { id },
-        data: { status: "REJECTED", processedAt },
+        data: { status: "REJECTED", processedAt, processedVia },
       });
     }
 

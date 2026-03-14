@@ -56,4 +56,5 @@ model AccountChangeRequest {
   status          String   @default("PENDING") // PENDING | APPROVED | REJECTED
   createdAt       DateTime @default(now())
   processedAt     DateTime? // 승인/거부 처리 일시
+  processedVia    String?  // "telegram" | "admin" - 텔레그램에서 처리한 내역만 어드민에 표시
 }

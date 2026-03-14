@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-/** 어드민: 계좌 변경 신청 목록 (최신순) */
+/** 어드민: 계좌 변경 신청 목록 - 텔레그램에서 처리한 내역만 (최신순) */
 export async function GET() {
   try {
     const list = await prisma.accountChangeRequest.findMany({
+      where: { processedVia: "telegram" },
       orderBy: { createdAt: "desc" },
       include: {
         user: {

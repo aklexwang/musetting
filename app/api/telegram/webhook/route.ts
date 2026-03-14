@@ -130,35 +130,48 @@ export async function POST(request: Request) {
           }
 
           const processedAt = new Date();
+          const processedVia = "telegram";
+
           if (accAction === "approve") {
-            await prisma.user.update({
-              where: { id: accReq.userId },
-              data: {
-                accountHolder: accReq.afterHolder,
-                bankName: accReq.afterBank,
-                accountNumber: accReq.afterAccount,
-              },
-            });
-            await prisma.accountChangeRequest.update({
-              where: { id: reqId },
-              data: { status: "APPROVED", processedAt },
-            });
-            const resultText =
-              `✅ 계좌 변경 승인\n` +
-              `아이디: ${accReq.user.username}\n` +
-              `변경 전: ${accReq.beforeHolder} / ${accReq.beforeBank} / ${accReq.beforeAccount}\n` +
-              `변경 후: ${accReq.afterHolder} / ${accReq.afterBank} / ${accReq.afterAccount}`;
-            await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch((e) => console.error("[webhook] acc approve editMessage:", e));
+            try {
+              await prisma.user.update({
+                where: { id: accReq.userId },
+                data: {
+                  accountHolder: accReq.afterHolder,
+                  bankName: accReq.afterBank,
+                  accountNumber: accReq.afterAccount,
+                },
+              });
+            } catch (e) {
+              console.error("[webhook] acc approve user.update:", e);
+              await bot.editMessageText("❌ 회원 계좌 반영 중 오류가 발생했습니다.", { chat_id: chatId, message_id: messageId }).catch(() => {});
+              return NextResponse.json({ ok: true });
+            }
+            try {
+              await prisma.accountChangeRequest.update({
+                where: { id: reqId },
+                data: { status: "APPROVED", processedAt, processedVia },
+              });
+            } catch (e) {
+              console.error("[webhook] acc approve request.update:", e);
+              await bot.editMessageText("❌ 처리 상태 저장 중 오류가 발생했습니다.", { chat_id: chatId, message_id: messageId }).catch(() => {});
+              return NextResponse.json({ ok: true });
+            }
+            const shortText = `✅ 계좌 변경 승인\n아이디: ${accReq.user.username}`;
+            await bot.editMessageText(shortText, { chat_id: chatId, message_id: messageId }).catch((e) => console.error("[webhook] acc approve editMessage:", e));
           } else {
-            await prisma.accountChangeRequest.update({
-              where: { id: reqId },
-              data: { status: "REJECTED", processedAt },
-            });
-            const resultText =
-              `❌ 계좌 변경 거부\n` +
-              `아이디: ${accReq.user.username}\n` +
-              `요청 계좌: ${accReq.afterHolder} / ${accReq.afterBank} / ${accReq.afterAccount}`;
-            await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch((e) => console.error("[webhook] acc reject editMessage:", e));
+            try {
+              await prisma.accountChangeRequest.update({
+                where: { id: reqId },
+                data: { status: "REJECTED", processedAt, processedVia },
+              });
+            } catch (e) {
+              console.error("[webhook] acc reject request.update:", e);
+              await bot.editMessageText("❌ 처리 중 오류가 발생했습니다.", { chat_id: chatId, message_id: messageId }).catch(() => {});
+              return NextResponse.json({ ok: true });
+            }
+            const shortText = `❌ 계좌 변경 거부\n아이디: ${accReq.user.username}`;
+            await bot.editMessageText(shortText, { chat_id: chatId, message_id: messageId }).catch((e) => console.error("[webhook] acc reject editMessage:", e));
           }
         } catch (e) {
           console.error("[webhook] acc 처리 오류:", e);
