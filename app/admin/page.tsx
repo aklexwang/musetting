@@ -88,6 +88,19 @@ export default function AdminPage() {
   const sellCount = sellTxns.length;
   const maxBar = Math.max(pendingCount, pendingTxns.length, approvedCount, buyCount, sellCount, 1);
 
+  type RecentItem = { kind: "회원가입" | "구매" | "판매"; label: string; createdAt: string; id: string };
+  const recentActivities: RecentItem[] = [
+    ...users.map((u): RecentItem => ({ kind: "회원가입", label: u.username, createdAt: u.createdAt, id: u.id })),
+    ...transactions.map((t): RecentItem => ({
+      kind: t.type === "BUY" ? "구매" : "판매",
+      label: `${t.user?.username ?? "-"} ${t.amount.toLocaleString("ko-KR")}원`,
+      createdAt: t.createdAt,
+      id: t.id,
+    })),
+  ]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 10);
+
   const fetchUsers = async () => {
     setFetchError(null);
     setLoading(true);
@@ -264,6 +277,35 @@ export default function AdminPage() {
 
         {menu === "현황판" && (
           <div className="space-y-8">
+            <Card className="rounded-2xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
+              <CardHeader className="border-b border-slate-700/50 px-6 py-4">
+                <CardTitle className="text-slate-100 font-semibold tracking-tight text-base">실시간 최근 활동</CardTitle>
+                <CardDescription className="text-slate-400 text-sm mt-0.5">최근 회원가입·구매·판매 최대 10건</CardDescription>
+              </CardHeader>
+              <CardContent className="px-6 py-4">
+                {recentActivities.length === 0 ? (
+                  <p className="text-slate-500 text-sm py-6 text-center">최근 활동이 없습니다.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {recentActivities.map((item) => (
+                      <li
+                        key={`${item.kind}-${item.id}-${item.createdAt}`}
+                        className="flex items-center justify-between gap-3 rounded-lg bg-slate-800/50 px-4 py-2.5 text-sm"
+                      >
+                        <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded ${item.kind === "회원가입" ? "bg-amber-500/20 text-amber-300" : item.kind === "구매" ? "bg-violet-500/20 text-violet-300" : "bg-pink-500/20 text-pink-300"}`}>
+                          {item.kind}
+                        </span>
+                        <span className="text-slate-200 truncate min-w-0 flex-1 text-center">{item.label}</span>
+                        <span className="text-slate-500 text-xs tabular-nums shrink-0">
+                          {new Date(item.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               {kpiCards.map((card) => {
                 const content = (

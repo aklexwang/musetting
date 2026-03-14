@@ -16,10 +16,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { username },
-      select: { id: true, username: true, password: true, status: true, suspended: true },
-    });
+    let user: { id: string; username: string; password: string; status: string; suspended?: boolean } | null;
+    try {
+      user = await prisma.user.findUnique({
+        where: { username },
+        select: { id: true, username: true, password: true, status: true, suspended: true },
+      });
+    } catch {
+      user = await prisma.user.findUnique({
+        where: { username },
+        select: { id: true, username: true, password: true, status: true },
+      });
+      if (user) (user as { suspended?: boolean }).suspended = false;
+    }
 
     if (!user) {
       return NextResponse.json(
