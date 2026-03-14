@@ -96,15 +96,39 @@ export default function AdminPage() {
   const filteredBuyTxns = !memberSearchLower ? buyTxns : buyTxns.filter((t) => (t.user?.username ?? "").toLowerCase().includes(memberSearchLower));
   const filteredSellTxns = !memberSearchLower ? sellTxns : sellTxns.filter((t) => (t.user?.username ?? "").toLowerCase().includes(memberSearchLower));
 
-  type RecentItem = { kind: "회원가입" | "구매" | "판매"; label: string; createdAt: string; id: string };
+  type RecentItem = {
+    kind: "회원가입" | "구매" | "판매";
+    id: string;
+    createdAt: string;
+    username: string;
+    bankName: string;
+    accountNumber: string;
+    accountHolder: string;
+    amount?: number;
+  };
   const recentActivities: RecentItem[] = [
-    ...users.map((u): RecentItem => ({ kind: "회원가입", label: u.username, createdAt: u.createdAt, id: u.id })),
-    ...transactions.map((t): RecentItem => ({
-      kind: t.type === "BUY" ? "구매" : "판매",
-      label: `${t.user?.username ?? "-"} ${t.amount.toLocaleString("ko-KR")}원`,
-      createdAt: t.createdAt,
-      id: t.id,
+    ...users.map((u): RecentItem => ({
+      kind: "회원가입",
+      id: u.id,
+      createdAt: u.createdAt,
+      username: u.username,
+      bankName: u.bankName ?? "-",
+      accountNumber: u.accountNumber ?? "-",
+      accountHolder: u.accountHolder ?? "-",
     })),
+    ...transactions.map((t): RecentItem => {
+      const u = users.find((x) => x.username === (t.user?.username ?? ""));
+      return {
+        kind: t.type === "BUY" ? "구매" : "판매",
+        id: t.id,
+        createdAt: t.createdAt,
+        username: t.user?.username ?? "-",
+        bankName: u?.bankName ?? "-",
+        accountNumber: u?.accountNumber ?? "-",
+        accountHolder: u?.accountHolder ?? "-",
+        amount: t.amount,
+      };
+    }),
   ]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 10);
@@ -316,19 +340,44 @@ export default function AdminPage() {
                 {recentActivities.length === 0 ? (
                   <p className="text-slate-500 text-sm py-6 text-center">최근 활동이 없습니다.</p>
                 ) : (
-                  <ul className="space-y-2">
+                  <ul className="space-y-3">
                     {recentActivities.map((item) => (
                       <li
                         key={`${item.kind}-${item.id}-${item.createdAt}`}
-                        className="flex items-center justify-between gap-3 rounded-lg bg-slate-800/50 px-4 py-2.5 text-sm"
+                        className="rounded-xl bg-slate-800/50 border border-slate-700/40 overflow-hidden"
                       >
-                        <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded ${item.kind === "회원가입" ? "bg-amber-500/20 text-amber-300" : item.kind === "구매" ? "bg-violet-500/20 text-violet-300" : "bg-pink-500/20 text-pink-300"}`}>
-                          {item.kind}
-                        </span>
-                        <span className="text-slate-200 truncate min-w-0 flex-1 text-center">{item.label}</span>
-                        <span className="text-slate-500 text-xs tabular-nums shrink-0">
-                          {new Date(item.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                        </span>
+                        <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-slate-700/40">
+                          <span className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-md ${item.kind === "회원가입" ? "bg-amber-500/20 text-amber-300" : item.kind === "구매" ? "bg-violet-500/20 text-violet-300" : "bg-pink-500/20 text-pink-300"}`}>
+                            {item.kind}
+                          </span>
+                          <span className="text-slate-500 text-xs tabular-nums">
+                            {new Date(item.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        <div className="px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1.5 text-sm">
+                          <div className="flex flex-col">
+                            <span className="text-slate-500 text-xs">아이디</span>
+                            <span className="text-slate-200 font-medium truncate">{item.username}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-slate-500 text-xs">은행</span>
+                            <span className="text-slate-200 truncate">{item.bankName}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-slate-500 text-xs">계좌번호</span>
+                            <span className="text-slate-200 font-mono text-xs truncate">{item.accountNumber}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-slate-500 text-xs">예금주</span>
+                            <span className="text-slate-200 truncate">{item.accountHolder}</span>
+                          </div>
+                          {item.amount != null && (
+                            <div className="flex flex-col sm:col-span-2">
+                              <span className="text-slate-500 text-xs">금액</span>
+                              <span className="text-slate-200 font-semibold tabular-nums">{item.amount.toLocaleString("ko-KR")}원</span>
+                            </div>
+                          )}
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -539,9 +588,6 @@ export default function AdminPage() {
           <Card className="rounded-2xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
             <CardHeader className="border-b border-slate-700/50 px-6 py-5">
               <CardTitle className="text-slate-100 font-semibold tracking-tight">회원목록</CardTitle>
-              <CardDescription className="text-slate-400 text-sm mt-0.5">
-                가입 상태 및 구매/판매 권한을 관리합니다.
-              </CardDescription>
               <div className="mt-4">
                 <Input
                   type="text"
