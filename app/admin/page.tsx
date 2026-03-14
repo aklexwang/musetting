@@ -84,7 +84,7 @@ const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
 type AccountStatusValue = "NORMAL" | "SUSPENDED" | "TERMINATED";
 const ACCOUNT_STATUS_OPTIONS: { value: AccountStatusValue; label: string }[] = [
   { value: "NORMAL", label: "정상" },
-  { value: "SUSPENDED", label: "정지" },
+  { value: "SUSPENDED", label: "이용정지" },
   { value: "TERMINATED", label: "해지" },
 ];
 
@@ -725,7 +725,6 @@ export default function AdminPage() {
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">가입상태</TableHead>
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">상태</TableHead>
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">가입일</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">정지</TableHead>
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">설정</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -746,16 +745,6 @@ export default function AdminPage() {
                           </TableCell>
                           <TableCell className="text-slate-500 text-sm px-6 py-4 tabular-nums text-center">
                             {new Date(user.createdAt).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit", year: "numeric" })}
-                          </TableCell>
-                          <TableCell className="px-6 py-4 text-center">
-                            <button
-                              type="button"
-                              disabled={updatingId === user.id}
-                              className={`h-7 px-2.5 text-sm font-medium rounded-lg ${user.suspended ? "text-slate-400 bg-slate-600/50 hover:bg-slate-600" : "text-red-400 bg-red-500/10 hover:bg-red-500/20"}`}
-                              onClick={() => updateUser(user.id, { suspended: !user.suspended })}
-                            >
-                              {user.suspended ? "해제" : "정지"}
-                            </button>
                           </TableCell>
                           <TableCell className="px-6 py-4 text-center">
                             <button
@@ -790,7 +779,7 @@ export default function AdminPage() {
                     onValueChange={(v) => setSettingsForm((f) => ({ ...f, status: v as UserStatus }))}
                   >
                     <SelectTrigger className="w-full h-10 rounded-lg border-slate-600 bg-slate-800 text-slate-200">
-                      <SelectValue />
+                      <span>{STATUS_OPTIONS.find((o) => o.value === settingsForm.status)?.label ?? settingsForm.status}</span>
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-700">
                       {STATUS_OPTIONS.map((o) => (
@@ -808,7 +797,7 @@ export default function AdminPage() {
                     onValueChange={(v) => setSettingsForm((f) => ({ ...f, accountStatus: v as AccountStatusValue }))}
                   >
                     <SelectTrigger className="w-full h-10 rounded-lg border-slate-600 bg-slate-800 text-slate-200">
-                      <SelectValue />
+                      <span>{ACCOUNT_STATUS_OPTIONS.find((o) => o.value === settingsForm.accountStatus)?.label ?? settingsForm.accountStatus}</span>
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-700">
                       {ACCOUNT_STATUS_OPTIONS.map((o) => (
