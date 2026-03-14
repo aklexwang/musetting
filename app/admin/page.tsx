@@ -193,9 +193,9 @@ export default function AdminPage() {
   const kpiCards: { label: string; value: number; hint?: string; onClick?: () => void; gradient: string }[] = [
     { label: "가입 대기", value: pendingCount, hint: pendingCount > 0 ? "클릭 시 목록" : undefined, onClick: () => setShowPendingSignups(true), gradient: "from-amber-500/90 to-orange-600/90" },
     { label: "거래 대기", value: pendingTxns.length, hint: pendingTxns.length > 0 ? "클릭 시 목록" : undefined, onClick: () => setShowPendingTxns(true), gradient: "from-sky-500/90 to-cyan-600/90" },
-    { label: "승인 회원", value: approvedCount, gradient: "from-emerald-500/90 to-teal-600/90" },
-    { label: "구매", value: buyCount, gradient: "from-violet-500/90 to-purple-600/90" },
-    { label: "판매", value: sellCount, gradient: "from-rose-500/90 to-pink-600/90" },
+    { label: "승인 회원", value: approvedCount, gradient: "from-green-700 to-green-500" },
+    { label: "구매", value: buyCount, gradient: "from-violet-600 to-violet-500" },
+    { label: "판매", value: sellCount, gradient: "from-red-600 to-pink-500" },
   ];
 
   const renderTxnTable = (list: AdminTransaction[], title: string) => (
@@ -284,12 +284,12 @@ export default function AdminPage() {
               {kpiCards.map((card) => {
                 const content = (
                   <>
-                    <p className="text-3xl sm:text-4xl font-semibold tabular-nums text-white">{card.value}</p>
-                    <p className="text-white/80 text-sm mt-1 font-medium">{card.label}</p>
-                    {card.hint && <p className="text-white/60 text-xs mt-2">{card.hint}</p>}
+                    <p className="text-4xl sm:text-5xl font-bold tabular-nums text-white leading-none">{card.value}</p>
+                    <p className="text-white text-sm mt-2 font-medium">{card.label}</p>
+                    {card.hint && <p className="text-white/70 text-xs mt-1.5">{card.hint}</p>}
                   </>
                 );
-                const style = `rounded-2xl border border-white/5 bg-gradient-to-br ${card.gradient} p-5 sm:p-6 text-left transition-transform duration-200 hover:scale-[1.02] active:scale-[0.99]`;
+                const style = `rounded-2xl border-0 bg-gradient-to-br ${card.gradient} p-6 sm:p-7 text-left transition-transform duration-200 hover:scale-[1.02] active:scale-[0.99] shadow-lg`;
                 return card.onClick ? (
                   <button key={card.label} type="button" onClick={card.onClick} className={style}>
                     {content}
@@ -311,9 +311,9 @@ export default function AdminPage() {
                 {[
                   { label: "가입 대기", value: pendingCount, bar: "bg-amber-500" },
                   { label: "거래 대기", value: pendingTxns.length, bar: "bg-sky-500" },
-                  { label: "승인 회원", value: approvedCount, bar: "bg-emerald-500" },
+                  { label: "승인 회원", value: approvedCount, bar: "bg-green-500" },
                   { label: "구매", value: buyCount, bar: "bg-violet-500" },
-                  { label: "판매", value: sellCount, bar: "bg-rose-500" },
+                  { label: "판매", value: sellCount, bar: "bg-pink-500" },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center gap-4">
                     <span className="text-slate-400 text-sm w-24 shrink-0">{item.label}</span>
