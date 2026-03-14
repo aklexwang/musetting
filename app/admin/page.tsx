@@ -16,13 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
@@ -32,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 
 type UserStatus = "PENDING" | "APPROVED" | "REJECTED";
-type AdminMenu = "현황판" | "회원가입" | "구매" | "판매";
+type AdminMenu = "현황판" | "회원목록" | "구매" | "판매";
 
 interface AdminUser {
   id: string;
@@ -65,7 +58,7 @@ const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
 
 const MENU_ITEMS: { id: AdminMenu; label: string }[] = [
   { id: "현황판", label: "현황판" },
-  { id: "회원가입", label: "회원가입" },
+  { id: "회원목록", label: "회원목록" },
   { id: "구매", label: "구매" },
   { id: "판매", label: "판매" },
 ];
@@ -180,10 +173,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleStatusChange = (id: string, value: UserStatus) => {
-    updateUser(id, { status: value });
-  };
-
   const handleCanBuyChange = (id: string, checked: boolean) => {
     updateUser(id, { canBuy: checked });
   };
@@ -195,7 +184,7 @@ export default function AdminPage() {
   const kpiCards: { label: string; value: number; hint?: string; onClick?: () => void; gradient: string }[] = [
     { label: "가입 대기", value: pendingCount, hint: pendingCount > 0 ? "클릭 시 목록" : undefined, onClick: () => setShowPendingSignups(true), gradient: "from-amber-500/90 to-orange-600/90" },
     { label: "거래 대기", value: pendingTxns.length, hint: pendingTxns.length > 0 ? "클릭 시 목록" : undefined, onClick: () => setShowPendingTxns(true), gradient: "from-sky-500/90 to-cyan-600/90" },
-    { label: "승인 회원", value: approvedCount, hint: "클릭 시 목록", onClick: () => setListModal("approved_rejected"), gradient: "from-green-700 to-green-500" },
+    { label: "회원목록", value: approvedCount, hint: "클릭 시 목록", onClick: () => setListModal("approved_rejected"), gradient: "from-green-700 to-green-500" },
     { label: "구매", value: buyCount, hint: "클릭 시 목록", onClick: () => setListModal("buy"), gradient: "from-violet-600 to-violet-500" },
     { label: "판매", value: sellCount, hint: "클릭 시 목록", onClick: () => setListModal("sell"), gradient: "from-red-600 to-pink-500" },
   ];
@@ -313,7 +302,7 @@ export default function AdminPage() {
                 {[
                   { label: "가입 대기", value: pendingCount, bar: "bg-amber-500" },
                   { label: "거래 대기", value: pendingTxns.length, bar: "bg-sky-500" },
-                  { label: "승인 회원", value: approvedCount, bar: "bg-green-500" },
+                  { label: "회원목록", value: approvedCount, bar: "bg-green-500" },
                   { label: "구매", value: buyCount, bar: "bg-violet-500" },
                   { label: "판매", value: sellCount, bar: "bg-pink-500" },
                 ].map((item) => (
@@ -418,7 +407,7 @@ export default function AdminPage() {
           <DialogContent className="max-w-lg rounded-2xl border-slate-700/60 bg-slate-900 shadow-2xl text-slate-100 p-0 gap-0 overflow-hidden">
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-700/50">
               <DialogTitle className="text-slate-100 font-semibold">
-                {listModal === "approved_rejected" && "승인·거부 회원 목록"}
+                {listModal === "approved_rejected" && "회원목록"}
                 {listModal === "buy" && "구매 신청 회원 목록"}
                 {listModal === "sell" && "판매 신청 회원 목록"}
               </DialogTitle>
@@ -503,10 +492,10 @@ export default function AdminPage() {
           </DialogContent>
         </Dialog>
 
-        {menu === "회원가입" && (
+        {menu === "회원목록" && (
           <Card className="rounded-2xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
             <CardHeader className="border-b border-slate-700/50 px-6 py-5">
-              <CardTitle className="text-slate-100 font-semibold tracking-tight">회원가입 관리</CardTitle>
+              <CardTitle className="text-slate-100 font-semibold tracking-tight">회원목록</CardTitle>
               <CardDescription className="text-slate-400 text-sm mt-0.5">
                 가입 상태 및 구매/판매 권한을 관리합니다.
               </CardDescription>
@@ -549,22 +538,9 @@ export default function AdminPage() {
                           <TableCell className="text-slate-400 text-sm px-6 py-4 tabular-nums">{user.accountNumber}</TableCell>
                           <TableCell className="text-slate-400 text-sm px-6 py-4">{user.accountHolder}</TableCell>
                           <TableCell className="px-6 py-4">
-                            <Select
-                              value={user.status}
-                              onValueChange={(v) => handleStatusChange(user.id, v as UserStatus)}
-                              disabled={updatingId === user.id}
-                            >
-                              <SelectTrigger className="w-[100px] h-9 rounded-lg border-slate-600 bg-slate-800/60 text-slate-200 text-sm font-medium">
-                                <SelectValue>{STATUS_OPTIONS.find((o) => o.value === user.status)?.label ?? user.status}</SelectValue>
-                              </SelectTrigger>
-                              <SelectContent className="bg-slate-900 border-slate-700">
-                                {STATUS_OPTIONS.map((opt) => (
-                                  <SelectItem key={opt.value} value={opt.value} className="text-slate-200 focus:bg-slate-800 focus:text-slate-100">
-                                    {opt.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium ${user.status === "PENDING" ? "bg-amber-500/20 text-amber-300" : user.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+                              {STATUS_OPTIONS.find((o) => o.value === user.status)?.label ?? user.status}
+                            </span>
                           </TableCell>
                           <TableCell className="px-6 py-4">
                             <Switch
