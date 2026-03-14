@@ -581,7 +581,7 @@ export default function Home() {
         </Dialog>
 
         <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
-          <DialogContent showCloseButton={false} className="max-w-[min(90vw,72rem)] rounded-2xl border border-slate-700/60 bg-slate-900 shadow-2xl text-slate-100 p-0 gap-0 overflow-hidden">
+          <DialogContent showCloseButton={false} className="max-w-[min(95vw,144rem)] rounded-2xl border border-slate-700/60 bg-slate-900 shadow-2xl text-slate-100 p-0 gap-0 overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-700/50 px-6 py-4 bg-slate-800/50">
               <h2 className="text-lg font-semibold text-white">거래내역</h2>
               <button
