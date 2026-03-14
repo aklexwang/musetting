@@ -81,8 +81,10 @@ export default function AdminPage() {
   const [showPendingSignups, setShowPendingSignups] = useState(false);
   const [showPendingTxns, setShowPendingTxns] = useState(false);
   const [deletingPending, setDeletingPending] = useState(false);
+  const [listModal, setListModal] = useState<"approved_rejected" | "buy" | "sell" | null>(null);
 
   const pendingUsers = users.filter((u) => u.status === "PENDING");
+  const approvedAndRejectedUsers = users.filter((u) => u.status === "APPROVED" || u.status === "REJECTED");
   const pendingCount = pendingUsers.length;
   const pendingTxns = transactions.filter((t) => t.status === "PENDING");
   const buyTxns = transactions.filter((t) => t.type === "BUY");
@@ -193,9 +195,9 @@ export default function AdminPage() {
   const kpiCards: { label: string; value: number; hint?: string; onClick?: () => void; gradient: string }[] = [
     { label: "가입 대기", value: pendingCount, hint: pendingCount > 0 ? "클릭 시 목록" : undefined, onClick: () => setShowPendingSignups(true), gradient: "from-amber-500/90 to-orange-600/90" },
     { label: "거래 대기", value: pendingTxns.length, hint: pendingTxns.length > 0 ? "클릭 시 목록" : undefined, onClick: () => setShowPendingTxns(true), gradient: "from-sky-500/90 to-cyan-600/90" },
-    { label: "승인 회원", value: approvedCount, gradient: "from-green-700 to-green-500" },
-    { label: "구매", value: buyCount, gradient: "from-violet-600 to-violet-500" },
-    { label: "판매", value: sellCount, gradient: "from-red-600 to-pink-500" },
+    { label: "승인 회원", value: approvedCount, hint: "클릭 시 목록", onClick: () => setListModal("approved_rejected"), gradient: "from-green-700 to-green-500" },
+    { label: "구매", value: buyCount, hint: "클릭 시 목록", onClick: () => setListModal("buy"), gradient: "from-violet-600 to-violet-500" },
+    { label: "판매", value: sellCount, hint: "클릭 시 목록", onClick: () => setListModal("sell"), gradient: "from-red-600 to-pink-500" },
   ];
 
   const renderTxnTable = (list: AdminTransaction[], title: string) => (
@@ -407,6 +409,95 @@ export default function AdminPage() {
                     </li>
                   ))}
                 </ul>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={listModal !== null} onOpenChange={(open) => !open && setListModal(null)}>
+          <DialogContent className="max-w-lg rounded-2xl border-slate-700/60 bg-slate-900 shadow-2xl text-slate-100 p-0 gap-0 overflow-hidden">
+            <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-700/50">
+              <DialogTitle className="text-slate-100 font-semibold">
+                {listModal === "approved_rejected" && "승인·거부 회원 목록"}
+                {listModal === "buy" && "구매 신청 회원 목록"}
+                {listModal === "sell" && "판매 신청 회원 목록"}
+              </DialogTitle>
+              <p className="text-slate-400 text-sm mt-1">
+                {listModal === "approved_rejected" && "승인된 회원과 거부된 회원 데이터입니다."}
+                {listModal === "buy" && "구매를 신청한 회원 데이터입니다."}
+                {listModal === "sell" && "판매를 신청한 회원 데이터입니다."}
+              </p>
+            </DialogHeader>
+            <div className="max-h-[55vh] overflow-y-auto px-6 py-4">
+              {listModal === "approved_rejected" && (
+                approvedAndRejectedUsers.length === 0 ? (
+                  <p className="text-slate-500 text-sm py-6 text-center">승인/거부된 회원이 없습니다.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {approvedAndRejectedUsers.map((u) => (
+                      <li key={u.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800/60 px-4 py-3 text-sm">
+                        <div className="min-w-0">
+                          <span className="font-medium text-slate-200 block truncate">{u.username}</span>
+                          <span className="text-slate-500 text-xs">{u.accountHolder}</span>
+                        </div>
+                        <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded ${u.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+                          {u.status === "APPROVED" ? "승인" : "거절"}
+                        </span>
+                        <span className="text-slate-500 text-xs tabular-nums shrink-0">
+                          {new Date(u.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )
+              )}
+              {listModal === "buy" && (
+                buyTxns.length === 0 ? (
+                  <p className="text-slate-500 text-sm py-6 text-center">구매 신청 내역이 없습니다.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {buyTxns.map((t) => (
+                      <li key={t.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800/60 px-4 py-3 text-sm">
+                        <div className="min-w-0">
+                          <span className="font-medium text-slate-200 block truncate">{t.user?.username ?? "-"}</span>
+                          <span className="text-slate-400 text-xs">{t.amount.toLocaleString("ko-KR")}원</span>
+                        </div>
+                        <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded ${
+                          t.status === "PENDING" ? "bg-amber-500/20 text-amber-300" : t.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"
+                        }`}>
+                          {t.status === "PENDING" ? "대기" : t.status === "APPROVED" ? "승인" : "거절"}
+                        </span>
+                        <span className="text-slate-500 text-xs tabular-nums shrink-0">
+                          {new Date(t.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )
+              )}
+              {listModal === "sell" && (
+                sellTxns.length === 0 ? (
+                  <p className="text-slate-500 text-sm py-6 text-center">판매 신청 내역이 없습니다.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {sellTxns.map((t) => (
+                      <li key={t.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800/60 px-4 py-3 text-sm">
+                        <div className="min-w-0">
+                          <span className="font-medium text-slate-200 block truncate">{t.user?.username ?? "-"}</span>
+                          <span className="text-slate-400 text-xs">{t.amount.toLocaleString("ko-KR")}원</span>
+                        </div>
+                        <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded ${
+                          t.status === "PENDING" ? "bg-amber-500/20 text-amber-300" : t.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"
+                        }`}>
+                          {t.status === "PENDING" ? "대기" : t.status === "APPROVED" ? "승인" : "거절"}
+                        </span>
+                        <span className="text-slate-500 text-xs tabular-nums shrink-0">
+                          {new Date(t.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )
               )}
             </div>
           </DialogContent>
