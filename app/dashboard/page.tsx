@@ -80,14 +80,6 @@ export default function DashboardPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (type === "BUY" && user?.canBuy === false) {
-      setError(SUSPENDED_MSG);
-      return;
-    }
-    if (type === "SELL" && user?.canSell === false) {
-      setError(SUSPENDED_MSG);
-      return;
-    }
     const num = amount.replace(/\D/g, "");
     const value = parseInt(num, 10);
     if (!num || value < 10000) {
@@ -96,6 +88,24 @@ export default function DashboardPage() {
     }
     if (value % 10000 !== 0) {
       setError("금액은 만 원 단위로만 입력 가능합니다. (예: 10000, 20000)");
+      return;
+    }
+    try {
+      const sessionRes = await fetch("/api/auth/session", { credentials: "include", cache: "no-store" });
+      const sessionData = await sessionRes.json().catch(() => ({}));
+      const me = sessionData?.user;
+      if (me) {
+        if (type === "BUY" && me.canBuy === false) {
+          setError(SUSPENDED_MSG);
+          return;
+        }
+        if (type === "SELL" && me.canSell === false) {
+          setError(SUSPENDED_MSG);
+          return;
+        }
+      }
+    } catch {
+      setError(SUSPENDED_MSG);
       return;
     }
     setSubmitLoading(true);
