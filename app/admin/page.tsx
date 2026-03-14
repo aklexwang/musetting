@@ -533,8 +533,9 @@ export default function AdminPage() {
                       <TableRow className="border-slate-700/50 hover:bg-transparent">
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">아이디</TableHead>
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">은행</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">계좌번호</TableHead>
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">예금주</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">가입 상태</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">가입상태</TableHead>
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">구매</TableHead>
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">판매</TableHead>
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">가입일</TableHead>
@@ -545,6 +546,7 @@ export default function AdminPage() {
                         <TableRow key={user.id} className={`border-slate-700/40 hover:bg-slate-800/40 transition-colors ${i % 2 === 1 ? "bg-slate-800/20" : ""}`}>
                           <TableCell className="text-slate-200 font-medium px-6 py-4">{user.username}</TableCell>
                           <TableCell className="text-slate-400 text-sm px-6 py-4">{user.bankName}</TableCell>
+                          <TableCell className="text-slate-400 text-sm px-6 py-4 tabular-nums">{user.accountNumber}</TableCell>
                           <TableCell className="text-slate-400 text-sm px-6 py-4">{user.accountHolder}</TableCell>
                           <TableCell className="px-6 py-4">
                             <Select
@@ -553,7 +555,7 @@ export default function AdminPage() {
                               disabled={updatingId === user.id}
                             >
                               <SelectTrigger className="w-[100px] h-9 rounded-lg border-slate-600 bg-slate-800/60 text-slate-200 text-sm font-medium">
-                                <SelectValue />
+                                <SelectValue>{STATUS_OPTIONS.find((o) => o.value === user.status)?.label ?? user.status}</SelectValue>
                               </SelectTrigger>
                               <SelectContent className="bg-slate-900 border-slate-700">
                                 {STATUS_OPTIONS.map((opt) => (
