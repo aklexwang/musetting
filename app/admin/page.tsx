@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 type UserStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AdminMenu = "현황판" | "회원목록" | "구매" | "판매";
@@ -36,6 +37,7 @@ interface AdminUser {
   status: UserStatus;
   canBuy: boolean;
   canSell: boolean;
+  suspended: boolean;
   createdAt: string;
 }
 
@@ -147,7 +149,7 @@ export default function AdminPage() {
 
   const updateUser = async (
     id: string,
-    payload: { status?: UserStatus; canBuy?: boolean; canSell?: boolean }
+    payload: { status?: UserStatus; canBuy?: boolean; canSell?: boolean; suspended?: boolean }
   ) => {
     setUpdatingId(id);
     try {
@@ -517,6 +519,7 @@ export default function AdminPage() {
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">예금주</TableHead>
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">가입상태</TableHead>
                         <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">가입일</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-right">정지</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -533,6 +536,18 @@ export default function AdminPage() {
                           </TableCell>
                           <TableCell className="text-slate-500 text-sm px-6 py-4 tabular-nums">
                             {new Date(user.createdAt).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit", year: "numeric" })}
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-right">
+                            <Button
+                              type="button"
+                              variant={user.suspended ? "secondary" : "destructive"}
+                              size="sm"
+                              disabled={updatingId === user.id}
+                              className={user.suspended ? "bg-slate-600 hover:bg-slate-500 text-slate-200" : ""}
+                              onClick={() => updateUser(user.id, { suspended: !user.suspended })}
+                            >
+                              {user.suspended ? "해제" : "정지"}
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}

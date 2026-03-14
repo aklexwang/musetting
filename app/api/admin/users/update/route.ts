@@ -7,6 +7,7 @@ const updateBodySchema = z.object({
   status: z.enum(["PENDING", "APPROVED", "REJECTED"]).optional(),
   canBuy: z.boolean().optional(),
   canSell: z.boolean().optional(),
+  suspended: z.boolean().optional(),
 });
 
 export async function PATCH(request: Request) {
@@ -27,6 +28,7 @@ export async function PATCH(request: Request) {
         ...(data.status !== undefined && { status: data.status }),
         ...(data.canBuy !== undefined && { canBuy: data.canBuy }),
         ...(data.canSell !== undefined && { canSell: data.canSell }),
+        ...(data.suspended !== undefined && { suspended: data.suspended }),
       },
       select: {
         id: true,
@@ -34,6 +36,7 @@ export async function PATCH(request: Request) {
         status: true,
         canBuy: true,
         canSell: true,
+        suspended: true,
       },
     });
 

@@ -23,6 +23,7 @@ model User {
   status         String        @default("PENDING")
   canBuy         Boolean       @default(false)
   canSell        Boolean       @default(false)
+  suspended      Boolean       @default(false)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   transactions   Transaction[]

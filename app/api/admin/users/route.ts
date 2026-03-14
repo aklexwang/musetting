@@ -15,6 +15,7 @@ export async function GET() {
         status: true,
         canBuy: true,
         canSell: true,
+        suspended: true,
         createdAt: true,
       },
     });

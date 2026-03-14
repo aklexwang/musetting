@@ -18,13 +18,20 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: { username },
-      select: { id: true, username: true, password: true, status: true },
+      select: { id: true, username: true, password: true, status: true, suspended: true },
     });
 
     if (!user) {
       return NextResponse.json(
         { error: "아이디 또는 비밀번호가 올바르지 않습니다." },
         { status: 401 }
+      );
+    }
+
+    if (user.suspended) {
+      return NextResponse.json(
+        { error: "이용정지중입니다. BETEAST 관리자에게 문의하세요." },
+        { status: 403 }
       );
     }
 
