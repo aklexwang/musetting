@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -25,19 +25,11 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-} from "recharts";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type UserStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AdminMenu = "현황판" | "회원가입" | "구매" | "판매";
@@ -86,56 +78,18 @@ export default function AdminPage() {
   const [txnLoading, setTxnLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [expandedSignup, setExpandedSignup] = useState(false);
-  const [expandedTxn, setExpandedTxn] = useState(false);
+  const [showPendingSignups, setShowPendingSignups] = useState(false);
+  const [showPendingTxns, setShowPendingTxns] = useState(false);
 
-  const pendingUsers = useMemo(() => users.filter((u) => u.status === "PENDING"), [users]);
-  const pendingTxns = useMemo(() => transactions.filter((t) => t.status === "PENDING"), [transactions]);
-  const buyTxns = useMemo(() => transactions.filter((t) => t.type === "BUY"), [transactions]);
-  const sellTxns = useMemo(() => transactions.filter((t) => t.type === "SELL"), [transactions]);
+  const pendingUsers = users.filter((u) => u.status === "PENDING");
   const pendingCount = pendingUsers.length;
+  const pendingTxns = transactions.filter((t) => t.status === "PENDING");
+  const buyTxns = transactions.filter((t) => t.type === "BUY");
+  const sellTxns = transactions.filter((t) => t.type === "SELL");
   const approvedCount = users.filter((u) => u.status === "APPROVED").length;
-
-  const barChartData = useMemo(() => [
-    { name: "가입대기", count: pendingCount, fill: "#f97316" },
-    { name: "거래대기", count: pendingTxns.length, fill: "#eab308" },
-    { name: "승인회원", count: approvedCount, fill: "#ef4444" },
-    { name: "구매", count: buyTxns.length, fill: "#22c55e" },
-    { name: "판매", count: sellTxns.length, fill: "#a855f7" },
-  ], [pendingCount, pendingTxns.length, approvedCount, buyTxns.length, sellTxns.length]);
-
-  const pieChartData = useMemo(() => {
-    const buy = buyTxns.length;
-    const sell = sellTxns.length;
-    if (buy === 0 && sell === 0) return [{ name: "구매", value: 1, color: "#22c55e" }, { name: "판매", value: 1, color: "#a855f7" }];
-    return [
-      { name: "구매", value: buy || 1, color: "#22c55e" },
-      { name: "판매", value: sell || 1, color: "#a855f7" },
-    ];
-  }, [buyTxns.length, sellTxns.length]);
-
-  const areaChartData = useMemo(() => {
-    const days = 7;
-    const now = new Date();
-    return Array.from({ length: days }, (_, i) => {
-      const d = new Date(now);
-      d.setDate(d.getDate() - (days - 1 - i));
-      const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
-      const dayStart = new Date(d);
-      dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(d);
-      dayEnd.setHours(23, 59, 59, 999);
-      const signups = users.filter((u) => {
-        const t = new Date(u.createdAt);
-        return t >= dayStart && t <= dayEnd;
-      }).length;
-      const txns = transactions.filter((t) => {
-        const ct = new Date(t.createdAt);
-        return ct >= dayStart && ct <= dayEnd;
-      }).length;
-      return { date: dateStr, 가입: signups, 거래: txns, total: signups + txns };
-    });
-  }, [users, transactions]);
+  const buyCount = buyTxns.length;
+  const sellCount = sellTxns.length;
+  const maxBar = Math.max(pendingCount, pendingTxns.length, approvedCount, buyCount, sellCount, 1);
 
   const fetchUsers = async () => {
     setFetchError(null);
@@ -215,51 +169,54 @@ export default function AdminPage() {
     updateUser(id, { canSell: checked });
   };
 
+  const kpiCards: { label: string; value: number; hint?: string; onClick?: () => void; gradient: string }[] = [
+    { label: "가입 대기", value: pendingCount, hint: pendingCount > 0 ? "클릭 시 목록" : undefined, onClick: () => setShowPendingSignups(true), gradient: "from-amber-500/90 to-orange-600/90" },
+    { label: "거래 대기", value: pendingTxns.length, hint: pendingTxns.length > 0 ? "클릭 시 목록" : undefined, onClick: () => setShowPendingTxns(true), gradient: "from-sky-500/90 to-cyan-600/90" },
+    { label: "승인 회원", value: approvedCount, gradient: "from-emerald-500/90 to-teal-600/90" },
+    { label: "구매", value: buyCount, gradient: "from-violet-500/90 to-purple-600/90" },
+    { label: "판매", value: sellCount, gradient: "from-rose-500/90 to-pink-600/90" },
+  ];
+
   const renderTxnTable = (list: AdminTransaction[], title: string) => (
-    <Card className="bg-slate-900/80 border-slate-700">
-      <CardHeader className="border-b border-slate-700 pb-4">
-        <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+    <Card className="rounded-2xl border border-slate-700/60 bg-slate-900/50 backdrop-blur-sm overflow-hidden">
+      <CardHeader className="border-b border-slate-700/50 px-6 py-5">
+        <CardTitle className="text-slate-100 font-semibold tracking-tight">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="pt-4">
+      <CardContent className="p-0">
         {txnLoading ? (
-          <div className="flex justify-center py-8 text-slate-400">로딩 중...</div>
+          <div className="flex justify-center py-16 text-slate-400 text-sm">로딩 중...</div>
         ) : list.length === 0 ? (
-          <div className="flex justify-center py-8 text-slate-500 text-sm">내역이 없습니다.</div>
+          <div className="flex justify-center py-16 text-slate-500 text-sm">내역이 없습니다.</div>
         ) : (
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-700 hover:bg-transparent">
-                <TableHead className="text-slate-300 font-medium">아이디</TableHead>
-                <TableHead className="text-slate-300 font-medium">금액</TableHead>
-                <TableHead className="text-slate-300 font-medium">상태</TableHead>
-                <TableHead className="text-slate-300 font-medium">신청일시</TableHead>
+              <TableRow className="border-slate-700/50 hover:bg-transparent">
+                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">아이디</TableHead>
+                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">금액</TableHead>
+                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">상태</TableHead>
+                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">신청일시</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {list.map((txn) => (
-                <TableRow key={txn.id} className="border-slate-700 hover:bg-slate-800/50">
-                  <TableCell className="text-slate-200 font-medium">{txn.user?.username ?? "-"}</TableCell>
-                  <TableCell className="text-slate-300 font-mono">{txn.amount.toLocaleString("ko-KR")}원</TableCell>
-                  <TableCell>
+              {list.map((txn, i) => (
+                <TableRow key={txn.id} className={`border-slate-700/40 hover:bg-slate-800/40 transition-colors ${i % 2 === 1 ? "bg-slate-800/20" : ""}`}>
+                  <TableCell className="text-slate-200 font-medium px-6 py-4">{txn.user?.username ?? "-"}</TableCell>
+                  <TableCell className="text-slate-300 font-mono text-sm px-6 py-4">{txn.amount.toLocaleString("ko-KR")}원</TableCell>
+                  <TableCell className="px-6 py-4">
                     <span
-                      className={
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         txn.status === "PENDING"
-                          ? "text-amber-400"
+                          ? "bg-amber-500/20 text-amber-300"
                           : txn.status === "APPROVED"
-                            ? "text-emerald-400"
-                            : "text-red-400"
-                      }
+                            ? "bg-emerald-500/20 text-emerald-300"
+                            : "bg-red-500/20 text-red-300"
+                      }`}
                     >
                       {txn.status === "PENDING" ? "대기" : txn.status === "APPROVED" ? "승인" : "거절"}
                     </span>
                   </TableCell>
-                  <TableCell className="text-slate-500 text-sm">
-                    {new Date(txn.createdAt).toLocaleString("ko-KR", {
-                      month: "2-digit",
-                      day: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                  <TableCell className="text-slate-500 text-sm px-6 py-4 tabular-nums">
+                    {new Date(txn.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                   </TableCell>
                 </TableRow>
               ))}
@@ -271,24 +228,28 @@ export default function AdminPage() {
   );
 
   return (
-    <div className="min-h-screen w-full bg-slate-950">
-      <div className="container max-w-7xl mx-auto py-6 px-4">
-        <header className="text-center mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-white">
+    <div className="min-h-screen w-full bg-slate-950 text-slate-100 antialiased">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-30%,rgba(56,189,248,0.06),transparent_50%)] pointer-events-none" aria-hidden />
+      <div className="container relative max-w-6xl mx-auto px-4 py-8 sm:py-10">
+        <header className="mb-10">
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
             Admin Dashboard
           </h1>
+          <p className="mt-1 text-slate-400 text-sm">가맹점 벳이스트 관리</p>
         </header>
 
-        <nav className="flex flex-wrap gap-2 justify-center mb-8 border-b border-slate-700 pb-4">
+        <nav className="flex flex-wrap gap-1 p-1 rounded-2xl bg-slate-800/40 border border-slate-700/50 w-fit mb-10" role="tablist">
           {MENU_ITEMS.map((item) => (
             <button
               key={item.id}
               type="button"
+              role="tab"
+              aria-selected={menu === item.id}
               onClick={() => setMenu(item.id)}
-              className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 menu === item.id
-                  ? "bg-slate-600 text-white"
-                  : "bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-700/80"
+                  ? "bg-slate-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/50"
               }`}
             >
               {item.label}
@@ -297,312 +258,221 @@ export default function AdminPage() {
         </nav>
 
         {menu === "현황판" && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <button
-                type="button"
-                onClick={() => setExpandedSignup((v) => !v)}
-                className="text-left rounded-xl overflow-hidden border-0 bg-gradient-to-br from-orange-500 to-red-600 text-white shadow-xl hover:shadow-orange-500/20 hover:scale-[1.02] transition-all duration-200"
-              >
-                <Card className="border-0 bg-transparent shadow-none">
-                  <CardContent className="p-5 relative">
-                    <span className="absolute top-2 right-2 text-white/70 text-xs">클릭 시 목록</span>
-                    <p className="text-3xl font-bold tabular-nums">{pendingCount}</p>
-                    <p className="text-white/90 text-sm mt-1">가입 대기</p>
-                  </CardContent>
-                </Card>
-              </button>
-              <button
-                type="button"
-                onClick={() => setExpandedTxn((v) => !v)}
-                className="text-left rounded-xl overflow-hidden border-0 bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-xl hover:shadow-amber-500/20 hover:scale-[1.02] transition-all duration-200"
-              >
-                <Card className="border-0 bg-transparent shadow-none">
-                  <CardContent className="p-5 relative">
-                    <span className="absolute top-2 right-2 text-white/70 text-xs">클릭 시 목록</span>
-                    <p className="text-3xl font-bold tabular-nums">{pendingTxns.length}</p>
-                    <p className="text-white/90 text-sm mt-1">거래 대기</p>
-                  </CardContent>
-                </Card>
-              </button>
-              <Card className="overflow-hidden border-0 bg-gradient-to-br from-red-500 to-orange-600 text-white shadow-xl rounded-xl">
-                <CardContent className="p-5">
-                  <p className="text-3xl font-bold tabular-nums">{approvedCount}</p>
-                  <p className="text-white/90 text-sm mt-1">승인 회원</p>
-                </CardContent>
-              </Card>
-              <Card className="overflow-hidden border-0 bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-xl rounded-xl">
-                <CardContent className="p-5">
-                  <p className="text-3xl font-bold tabular-nums">{buyTxns.length}</p>
-                  <p className="text-white/90 text-sm mt-1">구매</p>
-                </CardContent>
-              </Card>
-              <Card className="overflow-hidden border-0 bg-gradient-to-br from-violet-600 to-purple-700 text-white shadow-xl rounded-xl">
-                <CardContent className="p-5">
-                  <p className="text-3xl font-bold tabular-nums">{sellTxns.length}</p>
-                  <p className="text-white/90 text-sm mt-1">판매</p>
-                </CardContent>
-              </Card>
+          <div className="space-y-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              {kpiCards.map((card) => {
+                const content = (
+                  <>
+                    <p className="text-3xl sm:text-4xl font-semibold tabular-nums text-white">{card.value}</p>
+                    <p className="text-white/80 text-sm mt-1 font-medium">{card.label}</p>
+                    {card.hint && <p className="text-white/60 text-xs mt-2">{card.hint}</p>}
+                  </>
+                );
+                const style = `rounded-2xl border border-white/5 bg-gradient-to-br ${card.gradient} p-5 sm:p-6 text-left transition-transform duration-200 hover:scale-[1.02] active:scale-[0.99]`;
+                return card.onClick ? (
+                  <button key={card.label} type="button" onClick={card.onClick} className={style}>
+                    {content}
+                  </button>
+                ) : (
+                  <div key={card.label} className={style}>
+                    {content}
+                  </div>
+                );
+              })}
             </div>
 
-            {expandedSignup && (
-              <Card className="bg-slate-900/90 border-slate-700 rounded-xl overflow-hidden">
-                <CardHeader className="border-b border-slate-700 py-3">
-                  <CardTitle className="text-base text-slate-100">가입 대기 목록</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-3">
-                  {loading ? (
-                    <p className="text-slate-400 py-4 text-center text-sm">로딩 중...</p>
-                  ) : pendingUsers.length === 0 ? (
-                    <p className="text-slate-500 py-4 text-center text-sm">대기 중인 가입이 없습니다.</p>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-slate-700 hover:bg-transparent">
-                          <TableHead className="text-slate-300 font-medium">아이디</TableHead>
-                          <TableHead className="text-slate-300 font-medium">은행</TableHead>
-                          <TableHead className="text-slate-300 font-medium">예금주</TableHead>
-                          <TableHead className="text-slate-300 font-medium">가입일시</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pendingUsers.map((u) => (
-                          <TableRow key={u.id} className="border-slate-700 hover:bg-slate-800/50">
-                            <TableCell className="text-slate-200 font-medium">{u.username}</TableCell>
-                            <TableCell className="text-slate-400">{u.bankName}</TableCell>
-                            <TableCell className="text-slate-400">{u.accountHolder}</TableCell>
-                            <TableCell className="text-slate-500 text-sm">
-                              {new Date(u.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {expandedTxn && (
-              <Card className="bg-slate-900/90 border-slate-700 rounded-xl overflow-hidden">
-                <CardHeader className="border-b border-slate-700 py-3">
-                  <CardTitle className="text-base text-slate-100">거래 대기 목록</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-3">
-                  {txnLoading ? (
-                    <p className="text-slate-400 py-4 text-center text-sm">로딩 중...</p>
-                  ) : pendingTxns.length === 0 ? (
-                    <p className="text-slate-500 py-4 text-center text-sm">대기 중인 거래가 없습니다.</p>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-slate-700 hover:bg-transparent">
-                          <TableHead className="text-slate-300 font-medium">아이디</TableHead>
-                          <TableHead className="text-slate-300 font-medium">유형</TableHead>
-                          <TableHead className="text-slate-300 font-medium">금액</TableHead>
-                          <TableHead className="text-slate-300 font-medium">신청일시</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pendingTxns.map((t) => (
-                          <TableRow key={t.id} className="border-slate-700 hover:bg-slate-800/50">
-                            <TableCell className="text-slate-200 font-medium">{t.user?.username ?? "-"}</TableCell>
-                            <TableCell className="text-slate-400">{t.type === "BUY" ? "구매" : "판매"}</TableCell>
-                            <TableCell className="text-slate-300 font-mono">{t.amount.toLocaleString("ko-KR")}원</TableCell>
-                            <TableCell className="text-slate-500 text-sm">
-                              {new Date(t.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-slate-900/80 border-slate-700 rounded-xl overflow-hidden">
-                <CardHeader className="border-b border-slate-700 py-3">
-                  <CardTitle className="text-base text-slate-100">Statistics</CardTitle>
-                  <CardDescription className="text-slate-400 text-xs">항목별 건수</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4 h-[220px] min-h-[220px]">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={180}>
-                    <BarChart data={barChartData} layout="vertical" margin={{ left: 8, right: 8 }}>
-                      <XAxis type="number" stroke="#64748b" fontSize={11} />
-                      <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={11} width={70} />
-                      <Tooltip contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #475569", borderRadius: "8px" }} />
-                      <Bar dataKey="count" radius={[0, 4, 4, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-              <Card className="bg-slate-900/80 border-slate-700 rounded-xl overflow-hidden">
-                <CardHeader className="border-b border-slate-700 py-3">
-                  <CardTitle className="text-base text-slate-100">Budget</CardTitle>
-                  <CardDescription className="text-slate-400 text-xs">구매 / 판매 비율</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4 h-[220px] min-h-[220px]">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={180}>
-                    <PieChart>
-                      <Pie
-                        data={pieChartData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={75}
-                        paddingAngle={2}
-                        dataKey="value"
-                        label={({ name, value }) => `${name} ${value}`}
-                      >
-                        {pieChartData.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #475569", borderRadius: "8px" }} />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card className="bg-slate-900/80 border-slate-700 rounded-xl overflow-hidden">
-              <CardHeader className="border-b border-slate-700 py-3">
-                <CardTitle className="text-base text-slate-100">Subscribers</CardTitle>
-                <CardDescription className="text-slate-400 text-xs">최근 7일 가입·거래 추이</CardDescription>
+            <Card className="rounded-2xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
+              <CardHeader className="border-b border-slate-700/50 px-6 py-5">
+                <CardTitle className="text-slate-100 font-semibold tracking-tight">주요 지표</CardTitle>
+                <CardDescription className="text-slate-400 text-sm mt-0.5">지표별 비교</CardDescription>
               </CardHeader>
-              <CardContent className="pt-4 h-[200px] min-h-[200px]">
-                <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={160}>
-                  <AreaChart data={areaChartData}>
-                    <defs>
-                      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#f97316" stopOpacity={0.4} />
-                        <stop offset="100%" stopColor="#f97316" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="date" stroke="#64748b" fontSize={11} />
-                    <YAxis stroke="#64748b" fontSize={11} />
-                    <Tooltip contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #475569", borderRadius: "8px" }} />
-                    <Area type="monotone" dataKey="total" stroke="#f97316" fill="url(#areaGrad)" strokeWidth={2} />
-                  </AreaChart>
-                </ResponsiveContainer>
+              <CardContent className="px-6 py-5 space-y-4">
+                {[
+                  { label: "가입 대기", value: pendingCount, bar: "bg-amber-500" },
+                  { label: "거래 대기", value: pendingTxns.length, bar: "bg-sky-500" },
+                  { label: "승인 회원", value: approvedCount, bar: "bg-emerald-500" },
+                  { label: "구매", value: buyCount, bar: "bg-violet-500" },
+                  { label: "판매", value: sellCount, bar: "bg-rose-500" },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center gap-4">
+                    <span className="text-slate-400 text-sm w-24 shrink-0">{item.label}</span>
+                    <div className="flex-1 h-3 rounded-full bg-slate-800 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${item.bar} transition-all duration-700 ease-out min-w-[4px]`}
+                        style={{ width: `${(item.value / maxBar) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-slate-200 font-mono text-sm w-10 text-right tabular-nums">{item.value}</span>
+                  </div>
+                ))}
               </CardContent>
             </Card>
 
             {pendingCount > 0 && !loading && (
-              <div className="rounded-xl border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-amber-200 text-sm">
-                가입 요청 <strong>{pendingCount}건</strong> — 텔레그램에서 [승인]/[거절] 처리해 주세요.
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-amber-200/95 text-sm flex items-center gap-3">
+                <span className="text-amber-400">가입 요청 {pendingCount}건</span>
+                <span className="text-slate-400">·</span>
+                <span>텔레그램에서 [승인]/[거절] 처리해 주세요.</span>
               </div>
             )}
             {pendingTxns.length > 0 && !txnLoading && (
-              <div className="rounded-xl border border-sky-500/50 bg-sky-500/10 px-4 py-3 text-sky-200 text-sm">
-                거래 대기 <strong>{pendingTxns.length}건</strong> — 텔레그램에서 [승인]/[거절] 처리하세요.
+              <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 px-5 py-4 text-sky-200/95 text-sm flex items-center gap-3">
+                <span className="text-sky-400">거래 대기 {pendingTxns.length}건</span>
+                <span className="text-slate-400">·</span>
+                <span>텔레그램에서 [승인]/[거절] 처리하세요.</span>
               </div>
             )}
           </div>
         )}
 
+        <Dialog open={showPendingSignups} onOpenChange={setShowPendingSignups}>
+          <DialogContent className="max-w-md rounded-2xl border-slate-700/60 bg-slate-900 shadow-2xl text-slate-100 p-0 gap-0 overflow-hidden">
+            <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-700/50">
+              <DialogTitle className="text-slate-100 font-semibold">가입 대기 목록</DialogTitle>
+              <p className="text-slate-400 text-sm mt-1">텔레그램에서 승인/거절 처리해 주세요.</p>
+            </DialogHeader>
+            <div className="max-h-[50vh] overflow-y-auto px-6 py-4">
+              {pendingUsers.length === 0 ? (
+                <p className="text-slate-500 text-sm py-6 text-center">대기 중인 가입 요청이 없습니다.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {pendingUsers.map((u) => (
+                    <li key={u.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800/60 px-4 py-3 text-sm">
+                      <div className="min-w-0">
+                        <span className="font-medium text-slate-200 block truncate">{u.username}</span>
+                        <span className="text-slate-500 text-xs">{u.accountHolder}</span>
+                      </div>
+                      <span className="text-slate-500 text-xs tabular-nums shrink-0">
+                        {new Date(u.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showPendingTxns} onOpenChange={setShowPendingTxns}>
+          <DialogContent className="max-w-md rounded-2xl border-slate-700/60 bg-slate-900 shadow-2xl text-slate-100 p-0 gap-0 overflow-hidden">
+            <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-700/50">
+              <DialogTitle className="text-slate-100 font-semibold">거래 대기 목록</DialogTitle>
+              <p className="text-slate-400 text-sm mt-1">텔레그램에서 승인/거절 처리해 주세요.</p>
+            </DialogHeader>
+            <div className="max-h-[50vh] overflow-y-auto px-6 py-4">
+              {pendingTxns.length === 0 ? (
+                <p className="text-slate-500 text-sm py-6 text-center">대기 중인 거래가 없습니다.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {pendingTxns.map((t) => (
+                    <li key={t.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800/60 px-4 py-3 text-sm">
+                      <div className="min-w-0">
+                        <span className="font-medium text-slate-200 block truncate">{t.user?.username ?? "-"}</span>
+                        <span className="text-slate-500 text-xs">{t.type === "BUY" ? "구매" : "판매"} · {t.amount.toLocaleString("ko-KR")}원</span>
+                      </div>
+                      <span className="text-slate-500 text-xs tabular-nums shrink-0">
+                        {new Date(t.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {menu === "회원가입" && (
-          <Card className="bg-slate-900/80 border-slate-700">
-            <CardHeader className="border-b border-slate-700 pb-4">
-              <CardTitle className="text-lg text-slate-100">회원가입 관리</CardTitle>
-              <CardDescription className="text-slate-400">
+          <Card className="rounded-2xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
+            <CardHeader className="border-b border-slate-700/50 px-6 py-5">
+              <CardTitle className="text-slate-100 font-semibold tracking-tight">회원가입 관리</CardTitle>
+              <CardDescription className="text-slate-400 text-sm mt-0.5">
                 가입 상태 및 구매/판매 권한을 관리합니다.
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-4">
+            <CardContent className="p-0">
               {loading ? (
-                <div className="flex justify-center py-16 text-slate-400">로딩 중...</div>
+                <div className="flex justify-center py-20 text-slate-400 text-sm">로딩 중...</div>
               ) : fetchError ? (
-                <div className="flex flex-col items-center py-16 gap-4">
-                  <p className="text-red-400 text-sm text-center max-w-md">{fetchError}</p>
-                  <button type="button" onClick={() => fetchUsers()} className="px-4 py-2 rounded-lg bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm">
+                <div className="flex flex-col items-center py-20 gap-4 px-6">
+                  <p className="text-red-400/90 text-sm text-center max-w-md">{fetchError}</p>
+                  <button type="button" onClick={() => fetchUsers()} className="px-4 py-2.5 rounded-xl bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm font-medium transition-colors">
                     다시 불러오기
                   </button>
                 </div>
               ) : users.length === 0 ? (
-                <div className="flex flex-col items-center py-16 gap-2 text-slate-400 text-sm">
-                  <p>등록된 회원이 없습니다.</p>
-                  <button type="button" onClick={() => fetchUsers()} className="mt-2 px-4 py-2 rounded-lg bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm">새로고침</button>
+                <div className="flex flex-col items-center py-20 gap-3 px-6">
+                  <p className="text-slate-400 text-sm">등록된 회원이 없습니다.</p>
+                  <button type="button" onClick={() => fetchUsers()} className="px-4 py-2.5 rounded-xl bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm font-medium transition-colors">새로고침</button>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-slate-700 hover:bg-transparent">
-                      <TableHead className="text-slate-300 font-medium">아이디</TableHead>
-                      <TableHead className="text-slate-300 font-medium">은행</TableHead>
-                      <TableHead className="text-slate-300 font-medium">예금주</TableHead>
-                      <TableHead className="text-slate-300 font-medium">가입 상태</TableHead>
-                      <TableHead className="text-slate-300 font-medium">구매</TableHead>
-                      <TableHead className="text-slate-300 font-medium">판매</TableHead>
-                      <TableHead className="text-slate-300 font-medium">가입일</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map((user) => (
-                      <TableRow key={user.id} className="border-slate-700 hover:bg-slate-800/50">
-                        <TableCell className="text-slate-200 font-medium">{user.username}</TableCell>
-                        <TableCell className="text-slate-400">{user.bankName}</TableCell>
-                        <TableCell className="text-slate-400">{user.accountHolder}</TableCell>
-                        <TableCell>
-                          <Select
-                            value={user.status}
-                            onValueChange={(v) => handleStatusChange(user.id, v as UserStatus)}
-                            disabled={updatingId === user.id}
-                          >
-                            <SelectTrigger className="w-[90px] border-slate-600 bg-slate-800/50 text-slate-200 text-sm">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="bg-slate-900 border-slate-700">
-                              {STATUS_OPTIONS.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value} className="text-slate-200 focus:bg-slate-800">
-                                  {opt.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={user.canBuy}
-                            onCheckedChange={(c) => handleCanBuyChange(user.id, c === true)}
-                            disabled={updatingId === user.id}
-                            className="data-[state=checked]:bg-emerald-600"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={user.canSell}
-                            onCheckedChange={(c) => handleCanSellChange(user.id, c === true)}
-                            disabled={updatingId === user.id}
-                            className="data-[state=checked]:bg-emerald-600"
-                          />
-                        </TableCell>
-                        <TableCell className="text-slate-500 text-sm">
-                          {new Date(user.createdAt).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit", year: "numeric" })}
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-slate-700/50 hover:bg-transparent">
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">아이디</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">은행</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">예금주</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">가입 상태</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">구매</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">판매</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4">가입일</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((user, i) => (
+                        <TableRow key={user.id} className={`border-slate-700/40 hover:bg-slate-800/40 transition-colors ${i % 2 === 1 ? "bg-slate-800/20" : ""}`}>
+                          <TableCell className="text-slate-200 font-medium px-6 py-4">{user.username}</TableCell>
+                          <TableCell className="text-slate-400 text-sm px-6 py-4">{user.bankName}</TableCell>
+                          <TableCell className="text-slate-400 text-sm px-6 py-4">{user.accountHolder}</TableCell>
+                          <TableCell className="px-6 py-4">
+                            <Select
+                              value={user.status}
+                              onValueChange={(v) => handleStatusChange(user.id, v as UserStatus)}
+                              disabled={updatingId === user.id}
+                            >
+                              <SelectTrigger className="w-[100px] h-9 rounded-lg border-slate-600 bg-slate-800/60 text-slate-200 text-sm font-medium">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-slate-900 border-slate-700">
+                                {STATUS_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value} className="text-slate-200 focus:bg-slate-800 focus:text-slate-100">
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            <Switch
+                              checked={user.canBuy}
+                              onCheckedChange={(c) => handleCanBuyChange(user.id, c === true)}
+                              disabled={updatingId === user.id}
+                              className="data-[state=checked]:bg-emerald-600"
+                            />
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            <Switch
+                              checked={user.canSell}
+                              onCheckedChange={(c) => handleCanSellChange(user.id, c === true)}
+                              disabled={updatingId === user.id}
+                              className="data-[state=checked]:bg-emerald-600"
+                            />
+                          </TableCell>
+                          <TableCell className="text-slate-500 text-sm px-6 py-4 tabular-nums">
+                            {new Date(user.createdAt).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit", year: "numeric" })}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
         )}
 
-        {menu === "구매" && (
-          <div className="space-y-4">
-            {renderTxnTable(buyTxns, "구매 신청 내역")}
-          </div>
-        )}
-
-        {menu === "판매" && (
-          <div className="space-y-4">
-            {renderTxnTable(sellTxns, "판매 신청 내역")}
-          </div>
-        )}
+        {menu === "구매" && renderTxnTable(buyTxns, "구매 신청 내역")}
+        {menu === "판매" && renderTxnTable(sellTxns, "판매 신청 내역")}
       </div>
     </div>
   );
