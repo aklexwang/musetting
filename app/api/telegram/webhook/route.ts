@@ -210,16 +210,13 @@ export async function POST(request: Request) {
     if (body.message?.text === "/start") {
       const chatId = body.message.chat.id;
       const reply_markup = {
-        keyboard: [
-          [{ text: "📋 가입" }, { text: "📋 구매" }, { text: "📋 판매" }],
-          [{ text: "Admin" }],
-        ],
+        keyboard: [[{ text: "Admin" }]],
         resize_keyboard: true,
       };
       try {
         await bot.sendMessage(
           chatId,
-          `이 채팅방은 가맹점 "벳이스트" 전용방입니다.\n궁금하신점은 본사로 문의주세여\n\n아래 키보드 버튼으로 지난 가입/구매/판매 데이터를 확인할 수 있습니다.`,
+          `이 채팅방은 가맹점 "벳이스트" 전용방입니다.\n궁금하신점은 본사로 문의주세여`,
           { reply_markup: reply_markup as unknown as Record<string, unknown> }
         );
       } catch (e) {
@@ -229,7 +226,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 키보드 버튼 "Admin" 탭 → 인라인 URL 버튼 (탭 시 링크 바로 열림. API 제한으로 자동삭제 불가)
+    // 키보드 버튼 "Admin" 탭 → 인라인 URL 버튼 (탭 시 링크 바로 열림)
     if (body.message?.text === "Admin") {
       const chatId = body.message.chat.id;
       const adminUrl = "https://papaya-sorbet-3708f7.netlify.app/admin";
@@ -239,16 +236,6 @@ export async function POST(request: Request) {
       await bot.sendMessage(chatId, "관리자 페이지", {
         reply_markup: reply_markup as unknown as Record<string, unknown>,
       }).catch((e) => console.error("[webhook] Admin 버튼 전송 실패:", e));
-      return NextResponse.json({ ok: true });
-    }
-
-    // 키보드 버튼 탭: 📋 가입 / 📋 구매 / 📋 판매 → 목록 조회
-    const msgText = body.message?.text;
-    if (msgText === "📋 가입" || msgText === "📋 구매" || msgText === "📋 판매") {
-      const chatId = body.message!.chat.id;
-      const listType = msgText === "📋 가입" ? "signup" : msgText === "📋 구매" ? "buy" : "sell";
-      const text = await getListText(listType);
-      await bot.sendMessage(chatId, text).catch((e) => console.error("[webhook] sendMessage list 실패:", e));
       return NextResponse.json({ ok: true });
     }
   } catch (err) {
