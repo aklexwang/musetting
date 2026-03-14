@@ -98,8 +98,8 @@ export default function Home() {
     if (!user || !pendingAccountChange) return;
     const t = setInterval(() => {
       fetch("/api/account-change-request", { credentials: "include" })
-        .then((res) => (res.ok ? res.json() : {}))
-        .then((data) => {
+        .then((res) => (res.ok ? res.json() : Promise.resolve({ hasPending: false } as { hasPending: boolean; lastRequest?: { status: string } })))
+        .then((data: { hasPending?: boolean; lastRequest?: { status: string } }) => {
           if (data?.hasPending === false && data?.lastRequest?.status === "APPROVED") {
             setPendingAccountChange(false);
             setShowAccountChangeApproved(true);
