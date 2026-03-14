@@ -100,22 +100,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
-      // Admin: 링크 열기 + 메시지 자동 삭제
-      if (data === "admin_open") {
-        const adminUrl = "https://papaya-sorbet-3708f7.netlify.app/admin";
-        try {
-          await bot.answerCallbackQuery(queryId, { url: adminUrl });
-        } catch (e) {
-          console.error("[webhook] answerCallbackQuery admin_open:", e);
-        }
-        try {
-          await bot.deleteMessage(chatId, messageId);
-        } catch (e) {
-          console.error("[webhook] deleteMessage:", e);
-        }
-        return NextResponse.json({ ok: true });
-      }
-
       // 목록 조회 (인라인 콜백): list:signup | list:buy | list:sell
       if (data.startsWith("list:")) {
         const listType = data.slice(5) as "signup" | "buy" | "sell";
@@ -245,11 +229,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 키보드 버튼 "Admin" 탭 → 인라인 버튼 (callback_data: 탭 시 링크 열고 메시지 자동 삭제)
+    // 키보드 버튼 "Admin" 탭 → 인라인 URL 버튼 (탭 시 링크 바로 열림. API 제한으로 자동삭제 불가)
     if (body.message?.text === "Admin") {
       const chatId = body.message.chat.id;
+      const adminUrl = "https://papaya-sorbet-3708f7.netlify.app/admin";
       const reply_markup = {
-        inline_keyboard: [[{ text: "Admin", callback_data: "admin_open" }]],
+        inline_keyboard: [[{ text: "Admin", url: adminUrl }]],
       };
       await bot.sendMessage(chatId, "관리자 페이지", {
         reply_markup: reply_markup as unknown as Record<string, unknown>,
