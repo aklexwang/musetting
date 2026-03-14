@@ -130,16 +130,27 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: true });
         }
 
+        const typeIcon = txn.type === "BUY" ? "🛒" : "📤";
+        const typeLabel = txn.type === "BUY" ? "구매" : "판매";
+        const dateStr = txn.createdAt
+          ? new Date(txn.createdAt).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+          : "";
+        const rejectDateStr = txn.createdAt
+          ? (() => {
+              const d = new Date(txn.createdAt);
+              const ampm = d.getHours() < 12 ? "AM" : "PM";
+              const h = String(d.getHours() % 12 || 12).padStart(2, "0");
+              const min = String(d.getMinutes()).padStart(2, "0");
+              return `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, "0")}. ${String(d.getDate()).padStart(2, "0")}. ${ampm} ${h}:${min}`;
+            })()
+          : "";
+
         if (txnAction === "approve") {
           await prisma.transaction.update({
             where: { id: txnId },
             data: { status: "APPROVED" },
           });
-          const typeLabel = txn.type === "BUY" ? "구매" : "판매";
-          const dateStr = txn.createdAt
-            ? new Date(txn.createdAt).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
-            : "";
-          const resultText = `✅ ${typeLabel}승인\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${dateStr}`;
+          const resultText = `✅ ${typeIcon} ${typeLabel} 승인\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${dateStr}`;
           await bot.answerCallbackQuery(queryId);
           await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch((e) => {
             console.error("[webhook] editMessageText 실패:", e);
@@ -149,17 +160,7 @@ export async function POST(request: Request) {
             where: { id: txnId },
             data: { status: "REJECTED" },
           });
-          const typeLabel = txn.type === "BUY" ? "구매" : "판매";
-          const rejectDateStr = txn.createdAt
-            ? (() => {
-                const d = new Date(txn.createdAt);
-                const ampm = d.getHours() < 12 ? "AM" : "PM";
-                const h = String(d.getHours() % 12 || 12).padStart(2, "0");
-                const min = String(d.getMinutes()).padStart(2, "0");
-                return `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, "0")}. ${String(d.getDate()).padStart(2, "0")}. ${ampm} ${h}:${min}`;
-              })()
-            : "";
-          const resultText = `❌ ${typeLabel} 승인 거절\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${rejectDateStr}`;
+          const resultText = `❌ ${typeIcon} ${typeLabel} 승인 거절\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${rejectDateStr}`;
           await bot.answerCallbackQuery(queryId);
           await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch(() => {});
         }
@@ -210,7 +211,7 @@ export async function POST(request: Request) {
     if (body.message?.text === "/start") {
       const chatId = body.message.chat.id;
       const reply_markup = {
-        keyboard: [[{ text: "OPEN" }]],
+        keyboard: [[{ text: "ADMIN" }]],
         resize_keyboard: true,
       };
       try {
@@ -226,12 +227,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 키보드 버튼 "OPEN" 탭 → 인라인 URL 버튼 (탭 시 링크 바로 열림)
-    if (body.message?.text === "OPEN") {
+    // 키보드 버튼 "ADMIN" 탭 → 인라인 URL 버튼 (탭 시 링크 바로 열림)
+    if (body.message?.text === "ADMIN") {
       const chatId = body.message.chat.id;
       const adminUrl = "https://papaya-sorbet-3708f7.netlify.app/admin";
       const reply_markup = {
-        inline_keyboard: [[{ text: "OPEN", url: adminUrl }]],
+        inline_keyboard: [[{ text: "ADMIN", url: adminUrl }]],
       };
       await bot.sendMessage(chatId, "관리자페이지 열기", {
         reply_markup: reply_markup as unknown as Record<string, unknown>,
