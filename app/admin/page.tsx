@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type UserStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AdminMenu = "현황판" | "회원목록" | "구매" | "판매";
@@ -76,6 +77,7 @@ export default function AdminPage() {
   const [showPendingTxns, setShowPendingTxns] = useState(false);
   const [deletingPending, setDeletingPending] = useState(false);
   const [listModal, setListModal] = useState<"approved_rejected" | "buy" | "sell" | null>(null);
+  const [memberSearch, setMemberSearch] = useState("");
 
   const pendingUsers = users.filter((u) => u.status === "PENDING");
   const approvedAndRejectedUsers = users.filter((u) => u.status === "APPROVED" || u.status === "REJECTED");
@@ -87,6 +89,12 @@ export default function AdminPage() {
   const buyCount = buyTxns.length;
   const sellCount = sellTxns.length;
   const maxBar = Math.max(pendingCount, pendingTxns.length, approvedCount, buyCount, sellCount, 1);
+
+  const memberSearchLower = memberSearch.trim().toLowerCase();
+  const filteredUsers =
+    !memberSearchLower ? users : users.filter((u) => u.username.toLowerCase().includes(memberSearchLower) || (u.accountHolder ?? "").toLowerCase().includes(memberSearchLower) || (u.bankName ?? "").toLowerCase().includes(memberSearchLower));
+  const filteredBuyTxns = !memberSearchLower ? buyTxns : buyTxns.filter((t) => (t.user?.username ?? "").toLowerCase().includes(memberSearchLower));
+  const filteredSellTxns = !memberSearchLower ? sellTxns : sellTxns.filter((t) => (t.user?.username ?? "").toLowerCase().includes(memberSearchLower));
 
   type RecentItem = { kind: "회원가입" | "구매" | "판매"; label: string; createdAt: string; id: string };
   const recentActivities: RecentItem[] = [
@@ -277,6 +285,28 @@ export default function AdminPage() {
 
         {menu === "현황판" && (
           <div className="space-y-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              {kpiCards.map((card) => {
+                const content = (
+                  <>
+                    <p className="text-4xl sm:text-5xl font-bold tabular-nums text-white leading-none">{card.value}</p>
+                    <p className="text-white text-sm mt-2 font-medium">{card.label}</p>
+                    {card.hint && <p className="text-white/70 text-xs mt-1.5">{card.hint}</p>}
+                  </>
+                );
+                const style = `rounded-2xl border-0 bg-gradient-to-br ${card.gradient} p-6 sm:p-7 text-left transition-transform duration-200 hover:scale-[1.02] active:scale-[0.99] shadow-lg`;
+                return card.onClick ? (
+                  <button key={card.label} type="button" onClick={card.onClick} className={style}>
+                    {content}
+                  </button>
+                ) : (
+                  <div key={card.label} className={style}>
+                    {content}
+                  </div>
+                );
+              })}
+            </div>
+
             <Card className="rounded-2xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
               <CardHeader className="border-b border-slate-700/50 px-6 py-4">
                 <CardTitle className="text-slate-100 font-semibold tracking-tight text-base">실시간 최근 활동</CardTitle>
@@ -305,28 +335,6 @@ export default function AdminPage() {
                 )}
               </CardContent>
             </Card>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-              {kpiCards.map((card) => {
-                const content = (
-                  <>
-                    <p className="text-4xl sm:text-5xl font-bold tabular-nums text-white leading-none">{card.value}</p>
-                    <p className="text-white text-sm mt-2 font-medium">{card.label}</p>
-                    {card.hint && <p className="text-white/70 text-xs mt-1.5">{card.hint}</p>}
-                  </>
-                );
-                const style = `rounded-2xl border-0 bg-gradient-to-br ${card.gradient} p-6 sm:p-7 text-left transition-transform duration-200 hover:scale-[1.02] active:scale-[0.99] shadow-lg`;
-                return card.onClick ? (
-                  <button key={card.label} type="button" onClick={card.onClick} className={style}>
-                    {content}
-                  </button>
-                ) : (
-                  <div key={card.label} className={style}>
-                    {content}
-                  </div>
-                );
-              })}
-            </div>
 
             <Card className="rounded-2xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
               <CardHeader className="border-b border-slate-700/50 px-6 py-5">
@@ -534,6 +542,15 @@ export default function AdminPage() {
               <CardDescription className="text-slate-400 text-sm mt-0.5">
                 가입 상태 및 구매/판매 권한을 관리합니다.
               </CardDescription>
+              <div className="mt-4">
+                <Input
+                  type="text"
+                  placeholder="아이디·예금주·은행명으로 회원 검색"
+                  value={memberSearch}
+                  onChange={(e) => setMemberSearch(e.target.value)}
+                  className="max-w-xs h-10 rounded-lg border-slate-600 bg-slate-800/60 text-slate-200 placeholder:text-slate-500"
+                />
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {loading ? (
@@ -550,6 +567,10 @@ export default function AdminPage() {
                   <p className="text-slate-400 text-sm">등록된 회원이 없습니다.</p>
                   <button type="button" onClick={() => fetchUsers()} className="px-4 py-2.5 rounded-xl bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm font-medium transition-colors">새로고침</button>
                 </div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="flex flex-col items-center py-20 gap-3 px-6">
+                  <p className="text-slate-400 text-sm">검색 결과가 없습니다.</p>
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
@@ -565,7 +586,7 @@ export default function AdminPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users.map((user, i) => (
+                      {filteredUsers.map((user, i) => (
                         <TableRow key={user.id} className={`border-slate-700/40 hover:bg-slate-800/40 transition-colors ${i % 2 === 1 ? "bg-slate-800/20" : ""}`}>
                           <TableCell className="text-slate-200 font-medium px-6 py-4">{user.username}</TableCell>
                           <TableCell className="text-slate-400 text-sm px-6 py-4">{user.bankName}</TableCell>
@@ -601,8 +622,34 @@ export default function AdminPage() {
           </Card>
         )}
 
-        {menu === "구매" && renderTxnTable(buyTxns, "구매 신청 내역")}
-        {menu === "판매" && renderTxnTable(sellTxns, "판매 신청 내역")}
+        {menu === "구매" && (
+          <>
+            <div className="mb-4">
+              <Input
+                type="text"
+                placeholder="아이디로 회원 검색"
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+                className="max-w-xs h-10 rounded-lg border-slate-600 bg-slate-800/60 text-slate-200 placeholder:text-slate-500"
+              />
+            </div>
+            {renderTxnTable(filteredBuyTxns, "구매 신청 내역")}
+          </>
+        )}
+        {menu === "판매" && (
+          <>
+            <div className="mb-4">
+              <Input
+                type="text"
+                placeholder="아이디로 회원 검색"
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+                className="max-w-xs h-10 rounded-lg border-slate-600 bg-slate-800/60 text-slate-200 placeholder:text-slate-500"
+              />
+            </div>
+            {renderTxnTable(filteredSellTxns, "판매 신청 내역")}
+          </>
+        )}
       </div>
     </div>
   );
