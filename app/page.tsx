@@ -60,6 +60,10 @@ export default function Home() {
   const [accountSubmitLoading, setAccountSubmitLoading] = useState(false);
   /** 계좌 변경 신청 대기 중이면 true → "관리자가 승인중입니다." 표시 */
   const [pendingAccountChange, setPendingAccountChange] = useState(false);
+  /** 텔레그램에서 승인된 직후 → "계좌번호 변경이 승인되었습니다." + 승인된 계좌 표시 */
+  const [showAccountChangeApproved, setShowAccountChangeApproved] = useState(false);
+  /** 텔레그램에서 거부된 직후 → "승인 거부되었습니다." 표시 후 확인 시 일반 화면 */
+  const [showAccountChangeRejected, setShowAccountChangeRejected] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -75,6 +79,8 @@ export default function Home() {
     if (!user) {
       setProfile(null);
       setPendingAccountChange(false);
+      setShowAccountChangeApproved(false);
+      setShowAccountChangeRejected(false);
       return;
     }
     fetch("/api/me", { credentials: "include" })
@@ -86,6 +92,27 @@ export default function Home() {
       .then((data) => setPendingAccountChange(!!data?.hasPending))
       .catch(() => setPendingAccountChange(false));
   }, [user]);
+
+  /** 대기 중일 때 폴링: 텔레그램에서 승인되면 "계좌번호 변경이 승인되었습니다." 표시 */
+  useEffect(() => {
+    if (!user || !pendingAccountChange) return;
+    const t = setInterval(() => {
+      fetch("/api/account-change-request", { credentials: "include" })
+        .then((res) => (res.ok ? res.json() : {}))
+        .then((data) => {
+          if (data?.hasPending === false && data?.lastRequest?.status === "APPROVED") {
+            setPendingAccountChange(false);
+            setShowAccountChangeApproved(true);
+            fetch("/api/me", { credentials: "include" }).then((r) => (r.ok ? r.json() : null)).then((d) => d && setProfile(d));
+          } else if (data?.hasPending === false && data?.lastRequest?.status === "REJECTED") {
+            setPendingAccountChange(false);
+            setShowAccountChangeRejected(true);
+          }
+        })
+        .catch(() => {});
+    }, 3000);
+    return () => clearInterval(t);
+  }, [user, pendingAccountChange]);
 
   /** 거래내역 모달 열릴 때 목록 조회 */
   useEffect(() => {
@@ -331,7 +358,51 @@ export default function Home() {
             회원아이디 : {user?.username ?? ""}
           </p>
           <p className="text-center font-medium text-slate-400 mb-2">등록된 계좌</p>
-          {pendingAccountChange ? (
+          {showAccountChangeApproved ? (
+            <div className="border border-emerald-500/40 rounded-xl bg-slate-800/60 overflow-hidden">
+              <p className="text-center text-emerald-400 font-medium py-3 px-4">계좌번호 변경이 승인되었습니다.</p>
+              <div className="border-t border-slate-700 px-0">
+                <table className="w-full border-collapse">
+                  <tbody className="text-slate-200">
+                    <tr className="border-b border-slate-700">
+                      <th className="text-left py-2 px-3 text-slate-400 font-medium w-[5.5rem]">예금주 :</th>
+                      <td className="py-2 px-3">{profile?.accountHolder ?? "-"}</td>
+                    </tr>
+                    <tr className="border-b border-slate-700">
+                      <th className="text-left py-2 px-3 text-slate-400 font-medium w-[5.5rem]">은행명 :</th>
+                      <td className="py-2 px-3">{profile?.bankName ?? "-"}</td>
+                    </tr>
+                    <tr>
+                      <th className="text-left py-2 px-3 text-slate-400 font-medium w-[5.5rem]">계좌번호 :</th>
+                      <td className="py-2 px-3 font-mono">{profile?.accountNumber ?? "-"}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div className="px-3 py-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAccountChangeApproved(false)}
+                  className="w-full py-2.5 px-4 text-[0.9375rem] font-semibold text-white text-center rounded-xl bg-emerald-600 hover:bg-emerald-500 transition-colors"
+                >
+                  확인
+                </button>
+              </div>
+            </div>
+          ) : showAccountChangeRejected ? (
+            <div className="border border-red-500/40 rounded-xl bg-slate-800/60 overflow-hidden">
+              <p className="text-center text-red-400 font-medium py-4 px-4">승인 거부되었습니다.</p>
+              <div className="px-3 pb-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAccountChangeRejected(false)}
+                  className="w-full py-2.5 px-4 text-[0.9375rem] font-semibold text-white text-center rounded-xl bg-slate-600 hover:bg-slate-500 transition-colors"
+                >
+                  확인
+                </button>
+              </div>
+            </div>
+          ) : pendingAccountChange ? (
             <div className="border border-blue-500/40 rounded-xl bg-gradient-to-b from-[#1e3a5f] via-[#152238] to-[#1a2840] py-5 px-4 text-center">
               <p className="text-white font-medium">관리자가 승인중입니다.</p>
             </div>

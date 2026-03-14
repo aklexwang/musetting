@@ -5,18 +5,23 @@ import { prisma } from "@/lib/prisma";
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const adminChatIdRaw = process.env.TELEGRAM_ADMIN_CHAT_ID?.trim();
 
-/** 회원: 계좌 변경 신청 대기 여부 조회 */
+/** 회원: 계좌 변경 신청 대기 여부 + 최근 요청 상태 (승인 시 회원 페이지 문구 전환용) */
 export async function GET() {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
   try {
-    const pending = await prisma.accountChangeRequest.findFirst({
-      where: { userId: session.userId, status: "PENDING" },
-      select: { id: true },
+    const latest = await prisma.accountChangeRequest.findFirst({
+      where: { userId: session.userId },
+      orderBy: { createdAt: "desc" },
+      select: { status: true, processedAt: true },
     });
-    return NextResponse.json({ hasPending: !!pending });
+    const hasPending = latest?.status === "PENDING";
+    const lastRequest = latest
+      ? { status: latest.status as "PENDING" | "APPROVED" | "REJECTED", processedAt: latest.processedAt?.toISOString() ?? null }
+      : undefined;
+    return NextResponse.json({ hasPending, lastRequest });
   } catch (err) {
     console.error("GET /api/account-change-request:", err);
     return NextResponse.json({ hasPending: false });

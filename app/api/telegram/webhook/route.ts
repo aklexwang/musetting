@@ -131,20 +131,18 @@ export async function POST(request: Request) {
 
           const processedAt = new Date();
           if (accAction === "approve") {
-            await prisma.$transaction([
-              prisma.user.update({
-                where: { id: accReq.userId },
-                data: {
-                  accountHolder: accReq.afterHolder,
-                  bankName: accReq.afterBank,
-                  accountNumber: accReq.afterAccount,
-                },
-              }),
-              prisma.accountChangeRequest.update({
-                where: { id: reqId },
-                data: { status: "APPROVED", processedAt },
-              }),
-            ]);
+            await prisma.user.update({
+              where: { id: accReq.userId },
+              data: {
+                accountHolder: accReq.afterHolder,
+                bankName: accReq.afterBank,
+                accountNumber: accReq.afterAccount,
+              },
+            });
+            await prisma.accountChangeRequest.update({
+              where: { id: reqId },
+              data: { status: "APPROVED", processedAt },
+            });
             const resultText =
               `✅ 계좌 변경 승인\n` +
               `아이디: ${accReq.user.username}\n` +
