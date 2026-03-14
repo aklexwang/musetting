@@ -120,17 +120,39 @@ export async function POST(request: Request) {
         }
 
         try {
-          const accReq = await prisma.accountChangeRequest.findUnique({
-            where: { id: reqId },
-            include: { user: { select: { username: true } } },
-          });
+          let accReq: { userId: string; status: string; afterHolder: string; afterBank: string; afterAccount: string; user: { username: string } } | null;
+          try {
+            accReq = await prisma.accountChangeRequest.findUnique({
+              where: { id: reqId },
+              include: { user: { select: { username: true } } },
+            });
+          } catch (findErr: any) {
+            console.error("[webhook] acc findUnique:", findErr?.message ?? findErr);
+            await bot.editMessageText("❌ 요청 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.", { chat_id: chatId, message_id: messageId }).catch(() => {});
+            return NextResponse.json({ ok: true });
+          }
           if (!accReq || accReq.status !== "PENDING") {
             await bot.editMessageText("❌ 이미 처리되었거나 찾을 수 없는 요청입니다.", { chat_id: chatId, message_id: messageId }).catch(() => {});
             return NextResponse.json({ ok: true });
           }
 
           const processedAt = new Date();
-          const processedVia = "telegram";
+          const updateRequest = async (status: "APPROVED" | "REJECTED") => {
+            try {
+              await (prisma as any).accountChangeRequest.update({
+                where: { id: reqId },
+                data: { status, processedAt, processedVia: "telegram" },
+              });
+            } catch (err: any) {
+              const msg = String(err?.message ?? err);
+              if (/Unknown arg|processedVia|Invalid.*invocation/i.test(msg)) {
+                await prisma.accountChangeRequest.update({
+                  where: { id: reqId },
+                  data: { status, processedAt },
+                });
+              } else throw err;
+            }
+          };
 
           if (accAction === "approve") {
             try {
@@ -148,10 +170,7 @@ export async function POST(request: Request) {
               return NextResponse.json({ ok: true });
             }
             try {
-              await prisma.accountChangeRequest.update({
-                where: { id: reqId },
-                data: { status: "APPROVED", processedAt, processedVia },
-              });
+              await updateRequest("APPROVED");
             } catch (e) {
               console.error("[webhook] acc approve request.update:", e);
               await bot.editMessageText("❌ 처리 상태 저장 중 오류가 발생했습니다.", { chat_id: chatId, message_id: messageId }).catch(() => {});
@@ -161,10 +180,7 @@ export async function POST(request: Request) {
             await bot.editMessageText(shortText, { chat_id: chatId, message_id: messageId }).catch((e) => console.error("[webhook] acc approve editMessage:", e));
           } else {
             try {
-              await prisma.accountChangeRequest.update({
-                where: { id: reqId },
-                data: { status: "REJECTED", processedAt, processedVia },
-              });
+              await updateRequest("REJECTED");
             } catch (e) {
               console.error("[webhook] acc reject request.update:", e);
               await bot.editMessageText("❌ 처리 중 오류가 발생했습니다.", { chat_id: chatId, message_id: messageId }).catch(() => {});
