@@ -340,44 +340,23 @@ export default function AdminPage() {
                 {recentActivities.length === 0 ? (
                   <p className="text-slate-500 text-sm py-6 text-center">최근 활동이 없습니다.</p>
                 ) : (
-                  <ul className="space-y-3">
+                  <ul className="space-y-2">
                     {recentActivities.map((item) => (
                       <li
                         key={`${item.kind}-${item.id}-${item.createdAt}`}
-                        className="rounded-xl bg-slate-800/50 border border-slate-700/40 overflow-hidden"
+                        className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 rounded-lg bg-slate-800/50 border border-slate-700/40 text-sm"
                       >
-                        <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-slate-700/40">
-                          <span className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-md ${item.kind === "회원가입" ? "bg-amber-500/20 text-amber-300" : item.kind === "구매" ? "bg-violet-500/20 text-violet-300" : "bg-pink-500/20 text-pink-300"}`}>
-                            {item.kind}
-                          </span>
-                          <span className="text-slate-500 text-xs tabular-nums">
-                            {new Date(item.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                        </div>
-                        <div className="px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1.5 text-sm">
-                          <div className="flex flex-col">
-                            <span className="text-slate-500 text-xs">아이디</span>
-                            <span className="text-slate-200 font-medium truncate">{item.username}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-slate-500 text-xs">은행</span>
-                            <span className="text-slate-200 truncate">{item.bankName}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-slate-500 text-xs">계좌번호</span>
-                            <span className="text-slate-200 font-mono text-xs truncate">{item.accountNumber}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-slate-500 text-xs">예금주</span>
-                            <span className="text-slate-200 truncate">{item.accountHolder}</span>
-                          </div>
-                          {item.amount != null && (
-                            <div className="flex flex-col sm:col-span-2">
-                              <span className="text-slate-500 text-xs">금액</span>
-                              <span className="text-slate-200 font-semibold tabular-nums">{item.amount.toLocaleString("ko-KR")}원</span>
-                            </div>
-                          )}
-                        </div>
+                        <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded ${item.kind === "회원가입" ? "bg-amber-500/20 text-amber-300" : item.kind === "구매" ? "bg-violet-500/20 text-violet-300" : "bg-pink-500/20 text-pink-300"}`}>
+                          {item.kind}
+                        </span>
+                        <span className="text-slate-500 shrink-0">{new Date(item.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
+                        <span className="text-slate-400">아이디 <span className="text-slate-200">{item.username}</span></span>
+                        <span className="text-slate-400">은행 <span className="text-slate-200">{item.bankName}</span></span>
+                        <span className="text-slate-400">계좌번호 <span className="text-slate-200 font-mono">{item.accountNumber}</span></span>
+                        <span className="text-slate-400">예금주 <span className="text-slate-200">{item.accountHolder}</span></span>
+                        {item.amount != null && (
+                          <span className="text-slate-400">금액 <span className="text-slate-200 font-semibold tabular-nums">{item.amount.toLocaleString("ko-KR")}원</span></span>
+                        )}
                       </li>
                     ))}
                   </ul>
