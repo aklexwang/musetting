@@ -388,13 +388,23 @@ export default function SignupPage() {
               )}
             </div>
 
-            <Button
-              type="submit"
-              className="w-full h-10 bg-slate-700 hover:bg-slate-600 text-slate-100 transition-colors duration-200 font-medium"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? t.submitting : t.submitButton}
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 h-10 border-slate-600 bg-slate-800/50 text-slate-200 hover:bg-slate-700 hover:text-slate-100 transition-colors duration-200 font-medium"
+                onClick={() => router.replace(locale === "zh" ? "/zh" : "/")}
+              >
+                {t.cancel}
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 h-10 bg-slate-700 hover:bg-slate-600 text-slate-100 transition-colors duration-200 font-medium"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? t.submitting : t.submitButton}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
