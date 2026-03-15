@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import TelegramBot from "node-telegram-bot-api";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getTelegramLocale, getTranslations } from "@/lib/translations";
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const adminChatIdRaw = process.env.TELEGRAM_ADMIN_CHAT_ID?.trim();
@@ -90,13 +91,16 @@ export async function POST(request: Request) {
       } else {
         try {
           const bot = new TelegramBot(token, { polling: false });
-          const label = type === "BUY" ? "구매요청" : "판매요청";
-          const text = `[${label}] 아이디: ${session.username} / 금액: ${amount.toLocaleString("ko-KR")}원`;
+          const locale = getTelegramLocale();
+          const tg = getTranslations(locale).telegram;
+          const label = type === "BUY" ? tg.buyRequest : tg.sellRequest;
+          const amountUnit = locale === "zh" ? "元" : "원";
+          const text = `[${label}] ${tg.id}: ${session.username} / ${tg.amount}: ${amount.toLocaleString(locale === "zh" ? "zh-CN" : "ko-KR")}${amountUnit}`;
           const keyboard = {
             inline_keyboard: [
               [
-                { text: "승인", callback_data: `txn:approve:${txn.id}` },
-                { text: "거절", callback_data: `txn:reject:${txn.id}` },
+                { text: tg.txnApprove, callback_data: `txn:approve:${txn.id}` },
+                { text: tg.txnReject, callback_data: `txn:reject:${txn.id}` },
               ],
             ],
           };

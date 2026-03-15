@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getTelegramLocale, getTranslations } from "@/lib/translations";
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const adminChatIdRaw = process.env.TELEGRAM_ADMIN_CHAT_ID?.trim();
@@ -92,16 +93,18 @@ export async function POST(request: Request) {
         try {
           const { default: TelegramBot } = await import("node-telegram-bot-api");
           const bot = new TelegramBot(token, { polling: false });
+          const locale = getTelegramLocale();
+          const tg = getTranslations(locale).telegram;
           const text =
-            `📌 계좌 변경 요청\n\n` +
-            `아이디: ${user.username}\n\n` +
-            `【이전 계좌】\n예금주: ${user.accountHolder}\n은행명: ${user.bankName}\n계좌번호: ${user.accountNumber}\n\n` +
-            `【변경 요청 계좌】\n예금주: ${afterHolder}\n은행명: ${afterBank}\n계좌번호: ${afterAccount}`;
+            `${tg.accRequestTitle}\n\n` +
+            `${tg.accId}: ${user.username}\n\n` +
+            `${tg.accBefore}\n${tg.accountHolder}: ${user.accountHolder}\n${tg.bankName}: ${user.bankName}\n${tg.accountNumber}: ${user.accountNumber}\n\n` +
+            `${tg.accAfter}\n${tg.accountHolder}: ${afterHolder}\n${tg.bankName}: ${afterBank}\n${tg.accountNumber}: ${afterAccount}`;
           const keyboard = {
             inline_keyboard: [
               [
-                { text: "승인", callback_data: `acc:approve:${req.id}` },
-                { text: "거부", callback_data: `acc:reject:${req.id}` },
+                { text: tg.accApprove, callback_data: `acc:approve:${req.id}` },
+                { text: tg.accReject, callback_data: `acc:reject:${req.id}` },
               ],
             ],
           };

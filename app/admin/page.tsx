@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/contexts/LocaleContext";
+import { getTranslations } from "@/lib/translations";
 
 type UserStatus = "PENDING" | "APPROVED" | "REJECTED";
 type AdminMenu = "현황판" | "회원목록" | "구매" | "판매" | "계좌 변경";
@@ -75,28 +77,33 @@ interface AccountChangeRequestItem {
   user: { id: string; username: string };
 }
 
-const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
-  { value: "PENDING", label: "대기" },
-  { value: "APPROVED", label: "승인" },
-  { value: "REJECTED", label: "거절" },
+const STATUS_OPTIONS_KEYS: { value: UserStatus; key: "pending" | "approved" | "rejected" }[] = [
+  { value: "PENDING", key: "pending" },
+  { value: "APPROVED", key: "approved" },
+  { value: "REJECTED", key: "rejected" },
 ];
 
 type AccountStatusValue = "NORMAL" | "SUSPENDED" | "TERMINATED";
-const ACCOUNT_STATUS_OPTIONS: { value: AccountStatusValue; label: string }[] = [
-  { value: "NORMAL", label: "정상" },
-  { value: "SUSPENDED", label: "이용정지" },
-  { value: "TERMINATED", label: "해지" },
+const ACCOUNT_STATUS_OPTIONS_KEYS: { value: AccountStatusValue; key: "normal" | "suspended" | "terminated" }[] = [
+  { value: "NORMAL", key: "normal" },
+  { value: "SUSPENDED", key: "suspended" },
+  { value: "TERMINATED", key: "terminated" },
 ];
 
-const MENU_ITEMS: { id: AdminMenu; label: string }[] = [
-  { id: "현황판", label: "현황판" },
-  { id: "회원목록", label: "회원목록" },
-  { id: "구매", label: "구매" },
-  { id: "판매", label: "판매" },
-  { id: "계좌 변경", label: "계좌 변경" },
-];
+const MENU_IDS: AdminMenu[] = ["현황판", "회원목록", "구매", "판매", "계좌 변경"];
 
 export default function AdminPage() {
+  const locale = useLocale();
+  const t = getTranslations(locale).admin;
+  const numFmt = locale === "zh" ? "zh-CN" : "ko-KR";
+  const currencySuffix = locale === "zh" ? "元" : "원";
+  const getMenuLabel = (menuId: AdminMenu): string => {
+    const map: Record<AdminMenu, string> = { "현황판": t.overview, "회원목록": t.memberList, "구매": t.buy, "판매": t.sell, "계좌 변경": t.accountChange };
+    return map[menuId];
+  };
+  const STATUS_OPTIONS = STATUS_OPTIONS_KEYS.map((o) => ({ value: o.value, label: t[o.key] }));
+  const ACCOUNT_STATUS_OPTIONS = ACCOUNT_STATUS_OPTIONS_KEYS.map((o) => ({ value: o.value, label: t[o.key] }));
+
   const [menu, setMenu] = useState<AdminMenu>("현황판");
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [transactions, setTransactions] = useState<AdminTransaction[]>([]);
@@ -184,13 +191,13 @@ export default function AdminPage() {
       const res = await fetch("/api/admin/users");
       const data = await res.json();
       if (!res.ok) {
-        setFetchError(data?.error ?? "유저 목록을 불러오지 못했습니다.");
+        setFetchError(data?.error ?? (locale === "zh" ? "无法加载用户列表。" : "유저 목록을 불러오지 못했습니다."));
         setUsers([]);
         return;
       }
       setUsers(Array.isArray(data) ? data : []);
     } catch {
-      setFetchError("네트워크 오류. DB(prisma dev)가 켜져 있는지 확인하세요.");
+      setFetchError(locale === "zh" ? "网络错误，请确认数据库已启动。" : "네트워크 오류. DB(prisma dev)가 켜져 있는지 확인하세요.");
       setUsers([]);
     } finally {
       setLoading(false);
@@ -213,7 +220,7 @@ export default function AdminPage() {
 
   const deletePendingUsers = async () => {
     if (pendingCount === 0 || deletingPending) return;
-    if (!confirm(`가입 대기 ${pendingCount}건을 삭제할까요?`)) return;
+    if (!confirm(locale === "zh" ? `确定删除 ${pendingCount} 条待审核注册？` : `가입 대기 ${pendingCount}건을 삭제할까요?`)) return;
     setDeletingPending(true);
     try {
       const res = await fetch("/api/admin/users?status=PENDING", { method: "DELETE" });
@@ -316,11 +323,11 @@ export default function AdminPage() {
   };
 
   const kpiCards: { label: string; value: number; hint?: string; onClick?: () => void; gradient: string }[] = [
-    { label: "가입 대기", value: pendingCount, hint: pendingCount > 0 ? "클릭 시 목록" : undefined, onClick: () => setShowPendingSignups(true), gradient: "from-amber-500/90 to-orange-600/90" },
-    { label: "거래 대기", value: pendingTxns.length, hint: pendingTxns.length > 0 ? "클릭 시 목록" : undefined, onClick: () => setShowPendingTxns(true), gradient: "from-sky-500/90 to-cyan-600/90" },
-    { label: "회원목록", value: approvedCount, hint: "클릭 시 목록", onClick: () => setListModal("approved_rejected"), gradient: "from-green-700 to-green-500" },
-    { label: "구매", value: buyCount, hint: "클릭 시 목록", onClick: () => setListModal("buy"), gradient: "from-violet-600 to-violet-500" },
-    { label: "판매", value: sellCount, hint: "클릭 시 목록", onClick: () => setListModal("sell"), gradient: "from-red-600 to-pink-500" },
+    { label: t.pendingSignup, value: pendingCount, hint: pendingCount > 0 ? t.clickForList : undefined, onClick: () => setShowPendingSignups(true), gradient: "from-amber-500/90 to-orange-600/90" },
+    { label: t.pendingTxn, value: pendingTxns.length, hint: pendingTxns.length > 0 ? t.clickForList : undefined, onClick: () => setShowPendingTxns(true), gradient: "from-sky-500/90 to-cyan-600/90" },
+    { label: t.memberList, value: approvedCount, hint: t.clickForList, onClick: () => setListModal("approved_rejected"), gradient: "from-green-700 to-green-500" },
+    { label: t.buy, value: buyCount, hint: t.clickForList, onClick: () => setListModal("buy"), gradient: "from-violet-600 to-violet-500" },
+    { label: t.sell, value: sellCount, hint: t.clickForList, onClick: () => setListModal("sell"), gradient: "from-red-600 to-pink-500" },
   ];
 
   const renderTxnTable = (list: AdminTransaction[], title: string) => (
@@ -330,24 +337,24 @@ export default function AdminPage() {
       </CardHeader>
       <CardContent className="p-0">
         {txnLoading ? (
-          <div className="flex justify-center py-16 text-slate-400 text-sm">로딩 중...</div>
+          <div className="flex justify-center py-16 text-slate-400 text-sm">{locale === "zh" ? "加载中..." : "로딩 중..."}</div>
         ) : list.length === 0 ? (
-          <div className="flex justify-center py-16 text-slate-500 text-sm">내역이 없습니다.</div>
+          <div className="flex justify-center py-16 text-slate-500 text-sm">{locale === "zh" ? "暂无记录。" : "내역이 없습니다."}</div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow className="border-slate-700/50 hover:bg-transparent">
-                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">아이디</TableHead>
-                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">금액</TableHead>
-                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">상태</TableHead>
-                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">신청일시</TableHead>
+                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">{t.id}</TableHead>
+                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">{t.amount}</TableHead>
+                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">{t.status}</TableHead>
+                <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">{t.appliedAt}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {list.map((txn, i) => (
                 <TableRow key={txn.id} className={`border-slate-700/40 hover:bg-slate-800/40 transition-colors ${i % 2 === 1 ? "bg-slate-800/20" : ""}`}>
                   <TableCell className="text-slate-200 font-medium px-6 py-4 text-center">{txn.user?.username ?? "-"}</TableCell>
-                  <TableCell className="text-slate-300 font-mono text-sm px-6 py-4 text-center">{txn.amount.toLocaleString("ko-KR")}원</TableCell>
+                  <TableCell className="text-slate-300 font-mono text-sm px-6 py-4 text-center">{txn.amount.toLocaleString(numFmt)}{currencySuffix}</TableCell>
                   <TableCell className="px-6 py-4 text-center">
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -358,11 +365,11 @@ export default function AdminPage() {
                             : "bg-red-500/20 text-red-300"
                       }`}
                     >
-                      {txn.status === "PENDING" ? "대기" : txn.status === "APPROVED" ? "승인" : "거절"}
+                      {txn.status === "PENDING" ? t.pending : txn.status === "APPROVED" ? t.approved : t.rejected}
                     </span>
                   </TableCell>
                   <TableCell className="text-slate-500 text-sm px-6 py-4 tabular-nums text-center">
-                    {new Date(txn.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                    {new Date(txn.createdAt).toLocaleString(numFmt, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                   </TableCell>
                 </TableRow>
               ))}
@@ -379,26 +386,26 @@ export default function AdminPage() {
       <div className="container relative max-w-[72rem] mx-auto px-4 py-8 sm:py-10 text-center">
         <header className="mb-10">
           <h1 className="text-[1.875rem] font-semibold tracking-tight text-white">
-            Admin Dashboard
+            {t.title}
           </h1>
-          <p className="mt-1 text-slate-400 text-sm">가맹점 벳이스트 관리</p>
+          <p className="mt-1 text-slate-400 text-sm">{t.subtitle}</p>
         </header>
 
         <nav className="flex flex-wrap justify-center gap-1 p-1 rounded-2xl bg-slate-800/40 border border-slate-700/50 w-fit mx-auto mb-10" role="tablist">
-          {MENU_ITEMS.map((item) => (
+          {MENU_IDS.map((item) => (
             <button
-              key={item.id}
+              key={item}
               type="button"
               role="tab"
-              aria-selected={menu === item.id}
-              onClick={() => setMenu(item.id)}
+              aria-selected={menu === item}
+              onClick={() => setMenu(item)}
               className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                menu === item.id
+                menu === item
                   ? "bg-slate-600 text-white shadow-sm"
                   : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/50"
               }`}
             >
-              {item.label}
+              {getMenuLabel(item)}
             </button>
           ))}
         </nav>
@@ -429,12 +436,12 @@ export default function AdminPage() {
 
             <Card className="rounded-2xl border border-slate-700/50 bg-slate-950/40 overflow-hidden mb-4">
               <CardHeader className="border-b border-slate-700/50 px-6 py-5 text-center">
-                <CardTitle className="text-slate-100 font-semibold text-base">실시간 최근 활동</CardTitle>
-                <CardDescription className="text-slate-400 text-sm mt-0.5">최근 회원가입·구매·판매 최대 10건</CardDescription>
+                <CardTitle className="text-slate-100 font-semibold text-base">{t.recentActivity}</CardTitle>
+                <CardDescription className="text-slate-400 text-sm mt-0.5">{t.recentActivityDesc}</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 {recentActivities.length === 0 ? (
-                  <p className="text-slate-500 text-sm py-8 text-center">최근 활동이 없습니다.</p>
+                  <p className="text-slate-500 text-sm py-8 text-center">{t.noActivity}</p>
                 ) : (
                   <ul className="p-6 space-y-3 list-none">
                     {recentActivities.map((item) => (
@@ -444,33 +451,33 @@ export default function AdminPage() {
                       >
                         <div className="flex items-center justify-center gap-3 py-2 px-4 border-b border-slate-700/40">
                           <span className={`text-xs font-medium px-2.5 py-1 rounded-md ${item.kind === "회원가입" ? "bg-amber-500/20 text-amber-300" : item.kind === "구매" ? "bg-violet-500/20 text-violet-300" : "bg-pink-500/20 text-pink-300"}`}>
-                            {item.kind}
+                            {item.kind === "회원가입" ? t.memberReg : item.kind === "구매" ? t.buy : t.sell}
                           </span>
                           <span className="text-slate-500 text-xs tabular-nums">
-                            {new Date(item.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                            {new Date(item.createdAt).toLocaleString(numFmt, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                           </span>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3 py-3 px-4 text-sm">
                           <div className="flex flex-col items-center text-center">
-                            <span className="text-xs text-slate-500">아이디</span>
+                            <span className="text-xs text-slate-500">{t.id}</span>
                             <span className="text-slate-200 font-medium mt-0.5">{item.username}</span>
                           </div>
                           <div className="flex flex-col items-center text-center">
-                            <span className="text-xs text-slate-500">은행</span>
+                            <span className="text-xs text-slate-500">{t.bank}</span>
                             <span className="text-slate-200 font-medium mt-0.5">{item.bankName}</span>
                           </div>
                           <div className="flex flex-col items-center text-center">
-                            <span className="text-xs text-slate-500">계좌번호</span>
+                            <span className="text-xs text-slate-500">{t.accountNumber}</span>
                             <span className="text-slate-200 font-mono text-xs mt-0.5">{item.accountNumber}</span>
                           </div>
                           <div className="flex flex-col items-center text-center">
-                            <span className="text-xs text-slate-500">예금주</span>
+                            <span className="text-xs text-slate-500">{t.accountHolder}</span>
                             <span className="text-slate-200 font-medium mt-0.5">{item.accountHolder}</span>
                           </div>
                           {item.amount != null && (
                             <div className="flex flex-col items-center text-center sm:col-span-2">
-                              <span className="text-xs text-slate-500">금액</span>
-                              <span className="text-slate-200 font-medium tabular-nums mt-0.5">{item.amount.toLocaleString("ko-KR")}원</span>
+                              <span className="text-xs text-slate-500">{t.amount}</span>
+                              <span className="text-slate-200 font-medium tabular-nums mt-0.5">{item.amount.toLocaleString(numFmt)}{currencySuffix}</span>
                             </div>
                           )}
                         </div>
@@ -483,18 +490,18 @@ export default function AdminPage() {
 
             <Card className="rounded-2xl border border-slate-700/50 bg-slate-950/40 overflow-hidden">
               <CardHeader className="border-b border-slate-700/50 px-6 py-5 text-center">
-                <CardTitle className="text-slate-100 font-semibold text-base">주요 지표</CardTitle>
-                <CardDescription className="text-slate-400 text-sm mt-0.5">지표별 비교</CardDescription>
+                <CardTitle className="text-slate-100 font-semibold text-base">{t.keyMetrics}</CardTitle>
+                <CardDescription className="text-slate-400 text-sm mt-0.5">{t.metricsDesc}</CardDescription>
               </CardHeader>
               <CardContent className="px-6 py-5 space-y-4">
                 {[
-                  { label: "가입 대기", value: pendingCount, bar: "bg-amber-500" },
-                  { label: "거래 대기", value: pendingTxns.length, bar: "bg-sky-500" },
-                  { label: "회원목록", value: approvedCount, bar: "bg-green-500" },
-                  { label: "구매", value: buyCount, bar: "bg-violet-500" },
-                  { label: "판매", value: sellCount, bar: "bg-pink-500" },
+                  { key: "pendingSignup", label: t.pendingSignup, value: pendingCount, bar: "bg-amber-500" },
+                  { key: "pendingTxn", label: t.pendingTxn, value: pendingTxns.length, bar: "bg-sky-500" },
+                  { key: "memberList", label: t.memberList, value: approvedCount, bar: "bg-green-500" },
+                  { key: "buy", label: t.buy, value: buyCount, bar: "bg-violet-500" },
+                  { key: "sell", label: t.sell, value: sellCount, bar: "bg-pink-500" },
                 ].map((item) => (
-                  <div key={item.label} className="flex items-center gap-4">
+                  <div key={item.key} className="flex items-center gap-4">
                     <span className="text-slate-400 text-sm w-24 shrink-0 text-center">{item.label}</span>
                     <div className="flex-1 h-3 rounded-full bg-slate-800 overflow-hidden">
                       <div
@@ -511,9 +518,9 @@ export default function AdminPage() {
             {pendingCount > 0 && !loading && (
               <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-amber-200/95 text-sm flex flex-wrap items-center justify-between gap-3">
                 <span className="flex items-center gap-3">
-                  <span className="text-amber-400">가입 요청 {pendingCount}건</span>
+                  <span className="text-amber-400">{t.pendingSignup} {pendingCount}{locale === "zh" ? " 条" : "건"}</span>
                   <span className="text-slate-400">·</span>
-                  <span>텔레그램에서 [승인]/[거절] 처리해 주세요.</span>
+                  <span>{t.telegramNotice}</span>
                 </span>
                 <button
                   type="button"
@@ -521,7 +528,7 @@ export default function AdminPage() {
                   disabled={deletingPending}
                   className="shrink-0 rounded-lg bg-red-600/80 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-50"
                 >
-                  {deletingPending ? "삭제 중..." : "가입 대기 데이터 삭제"}
+                  {deletingPending ? t.deletePendingLoading : t.deletePending}
                 </button>
               </div>
             )}
@@ -874,7 +881,7 @@ export default function AdminPage() {
                 className="max-w-[20rem] h-10 rounded-lg border border-slate-600 bg-slate-800/60 text-slate-200 placeholder:text-slate-500 text-center focus:border-slate-500 focus:ring-2 focus:ring-slate-500/30"
               />
             </div>
-            {renderTxnTable(filteredBuyTxns, "구매 신청 내역")}
+            {renderTxnTable(filteredBuyTxns, t.buyListTitle)}
           </>
         )}
         {menu === "판매" && (
@@ -888,7 +895,7 @@ export default function AdminPage() {
                 className="max-w-[20rem] h-10 rounded-lg border border-slate-600 bg-slate-800/60 text-slate-200 placeholder:text-slate-500 text-center focus:border-slate-500 focus:ring-2 focus:ring-slate-500/30"
               />
             </div>
-            {renderTxnTable(filteredSellTxns, "판매 신청 내역")}
+            {renderTxnTable(filteredSellTxns, t.sellListTitle)}
           </>
         )}
 

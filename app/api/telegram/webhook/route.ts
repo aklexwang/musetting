@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getTelegramLocale, getTranslations } from "@/lib/translations";
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -46,6 +47,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
+  const locale = getTelegramLocale();
+  const tg = getTranslations(locale).telegram;
+
   const getListText = async (listType: "signup" | "buy" | "sell"): Promise<string> => {
     const limit = 15;
     try {
@@ -55,11 +59,11 @@ export async function POST(request: Request) {
           take: limit,
           select: { username: true, status: true, accountHolder: true, createdAt: true },
         });
-        let text = "📋 최근 가입 요청/회원 (최대 15건)\n\n";
-        if (users.length === 0) text += "데이터 없음.";
+        let text = `📋 ${tg.listSignup} (${limit})\n\n`;
+        if (users.length === 0) text += tg.noData;
         else {
           users.forEach((u, i) => {
-            const dateStr = new Date(u.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+            const dateStr = new Date(u.createdAt).toLocaleString(locale === "zh" ? "zh-CN" : "ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
             const statusEmoji = u.status === "APPROVED" ? "✅" : u.status === "REJECTED" ? "❌" : "⏳";
             text += `${i + 1}. ${statusEmoji} ${u.username} | ${u.accountHolder} | ${dateStr}\n`;
           });
@@ -67,26 +71,26 @@ export async function POST(request: Request) {
         return text;
       }
       const type = listType === "buy" ? "BUY" : "SELL";
-      const label = listType === "buy" ? "구매" : "판매";
+      const label = listType === "buy" ? tg.listBuy : tg.listSell;
       const rows = await prisma.transaction.findMany({
         where: { type: type },
         orderBy: { createdAt: "desc" },
         take: limit,
         include: { user: { select: { username: true } } },
       });
-      let text = `📋 최근 ${label} 요청 (최대 15건)\n\n`;
-      if (rows.length === 0) text += "데이터 없음.";
+      let text = `📋 ${label} (${limit})\n\n`;
+      if (rows.length === 0) text += tg.noData;
       else {
         rows.forEach((t, i) => {
-          const dateStr = new Date(t.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+          const dateStr = new Date(t.createdAt).toLocaleString(locale === "zh" ? "zh-CN" : "ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
           const statusEmoji = t.status === "APPROVED" ? "✅" : t.status === "REJECTED" ? "❌" : "⏳";
-          text += `${i + 1}. ${statusEmoji} ${t.user.username} | ${t.amount.toLocaleString("ko-KR")}원 | ${dateStr}\n`;
+          text += `${i + 1}. ${statusEmoji} ${t.user.username} | ${t.amount.toLocaleString(locale === "zh" ? "zh-CN" : "ko-KR")}${locale === "zh" ? "元" : "원"} | ${dateStr}\n`;
         });
       }
       return text;
     } catch (e) {
       console.error("[webhook] list query error:", e);
-      return "목록 조회 중 오류가 발생했습니다.";
+      return tg.listFetchError;
     }
   };
 
@@ -104,7 +108,7 @@ export async function POST(request: Request) {
       // 목록 조회 (인라인 콜백): list:signup | list:buy | list:sell
       if (data.startsWith("list:")) {
         const listType = data.slice(5) as "signup" | "buy" | "sell";
-        const text = listType === "signup" || listType === "buy" || listType === "sell" ? await getListText(listType) : "잘못된 목록 타입입니다.";
+        const text = listType === "signup" || listType === "buy" || listType === "sell" ? await getListText(listType) : tg.listError;
         await bot.answerCallbackQuery(queryId);
         await bot.sendMessage(chatId, text).catch((e) => console.error("[webhook] sendMessage list 실패:", e));
         return NextResponse.json({ ok: true });
@@ -130,7 +134,7 @@ export async function POST(request: Request) {
           );
           const accReq = rows[0];
           if (!accReq || accReq.status !== "PENDING") {
-            await bot.editMessageText("❌ 이미 처리되었거나 찾을 수 없는 요청입니다.", { chat_id: chatId, message_id: messageId }).catch(() => {});
+            await bot.editMessageText(tg.accAlreadyProcessed, { chat_id: chatId, message_id: messageId }).catch(() => {});
             return NextResponse.json({ ok: true });
           }
 
@@ -147,7 +151,7 @@ export async function POST(request: Request) {
               SET status = 'APPROVED', "processedAt" = ${processedAtStr}::timestamptz, "processedVia" = 'telegram'
               WHERE id = ${reqId}
             `);
-            const shortText = `✅ 계좌 변경 승인\n아이디: ${accReq.username}`;
+            const shortText = `${tg.accApproved} ${accReq.username}`;
             await bot.editMessageText(shortText, { chat_id: chatId, message_id: messageId }).catch((e) => console.error("[webhook] acc approve editMessage:", e));
           } else {
             await prisma.$executeRaw(Prisma.sql`
@@ -155,12 +159,12 @@ export async function POST(request: Request) {
               SET status = 'REJECTED', "processedAt" = ${processedAtStr}::timestamptz, "processedVia" = 'telegram'
               WHERE id = ${reqId}
             `);
-            const shortText = `❌ 계좌 변경 거부\n아이디: ${accReq.username}`;
+            const shortText = `${tg.accRejected} ${accReq.username}`;
             await bot.editMessageText(shortText, { chat_id: chatId, message_id: messageId }).catch((e) => console.error("[webhook] acc reject editMessage:", e));
           }
         } catch (e) {
           console.error("[webhook] acc 처리 오류:", e);
-          await bot.editMessageText("❌ 처리 중 오류가 발생했습니다.", { chat_id: chatId, message_id: messageId }).catch(() => {});
+          await bot.editMessageText(tg.accError, { chat_id: chatId, message_id: messageId }).catch(() => {});
         }
         return NextResponse.json({ ok: true });
       }
@@ -187,7 +191,8 @@ export async function POST(request: Request) {
         }
 
         const typeIcon = txn.type === "BUY" ? "🔵" : "🔴";
-        const typeLabel = txn.type === "BUY" ? "구매" : "판매";
+        const typeLabel = txn.type === "BUY" ? tg.txnBuyApproved.replace(/^[🔵🔴]\s*/, "") : tg.txnSellApproved.replace(/^[🔵🔴]\s*/, "");
+        const amountUnit = locale === "zh" ? "元" : "원";
         const dateStr = txn.createdAt
           ? new Date(txn.createdAt).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
           : "";
@@ -206,7 +211,7 @@ export async function POST(request: Request) {
             where: { id: txnId },
             data: { status: "APPROVED" },
           });
-          const resultText = `${typeIcon} ${typeLabel} 승인\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${dateStr}`;
+          const resultText = `${txn.type === "BUY" ? tg.txnBuyApproved : tg.txnSellApproved}\n${tg.id}: ${txn.user.username}\n${tg.amount}: ${txn.amount.toLocaleString(locale === "zh" ? "zh-CN" : "ko-KR")}${amountUnit}\n${tg.date}: ${dateStr}`;
           await bot.answerCallbackQuery(queryId);
           await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch((e) => {
             console.error("[webhook] editMessageText 실패:", e);
@@ -216,7 +221,7 @@ export async function POST(request: Request) {
             where: { id: txnId },
             data: { status: "REJECTED" },
           });
-          const resultText = `❌ ${typeIcon}${typeLabel} 승인 거절\n아이디: ${txn.user.username}\n금액: ${txn.amount.toLocaleString("ko-KR")}원\n날짜: ${rejectDateStr}`;
+          const resultText = `${txn.type === "BUY" ? tg.txnBuyRejected : tg.txnSellRejected}\n${tg.id}: ${txn.user.username}\n${tg.amount}: ${txn.amount.toLocaleString(locale === "zh" ? "zh-CN" : "ko-KR")}${amountUnit}\n${tg.date}: ${rejectDateStr}`;
           await bot.answerCallbackQuery(queryId);
           await bot.editMessageText(resultText, { chat_id: chatId, message_id: messageId }).catch(() => {});
         }
@@ -249,12 +254,12 @@ export async function POST(request: Request) {
         return `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, "0")}. ${String(d.getDate()).padStart(2, "0")}. ${ampm} ${h}:${min}`;
       };
       const memberInfo = user
-        ? `\n회원 아이디: ${user.username}\n은행명: ${user.bankName}\n계좌번호: ${user.accountNumber}\n예금주: ${user.accountHolder}${user.createdAt ? `\n가입날짜: ${formatSignupDate(user.createdAt)}` : ""}`
+        ? `\n${tg.memberId}: ${user.username}\n${tg.bankName}: ${user.bankName}\n${tg.accountNumber}: ${user.accountNumber}\n${tg.accountHolder}: ${user.accountHolder}${user.createdAt ? `\n${tg.signupDate}: ${formatSignupDate(user.createdAt)}` : ""}`
         : "";
       const resultText =
         action === "approve"
-          ? `✅ BETEAST AXPAY 회원 가입 승인${memberInfo}`
-          : `❌ BETEAST AXPAY 회원 가입 거부${memberInfo}`;
+          ? `${tg.signupApproved}${memberInfo}`
+          : `${tg.signupRejected}${memberInfo}`;
       await bot.answerCallbackQuery(queryId);
       await bot.editMessageText(resultText, {
         chat_id: chatId,
@@ -273,12 +278,12 @@ export async function POST(request: Request) {
       try {
         await bot.sendMessage(
           chatId,
-          `이 채팅방은 가맹점 "벳이스트" 전용방입니다.\n궁금하신점은 본사로 문의주세여`,
+          tg.startMessage,
           { reply_markup: reply_markup as unknown as Record<string, unknown> }
         );
       } catch (e) {
         console.error("[webhook] /start sendMessage 실패:", e);
-        await bot.sendMessage(chatId, `이 채팅방은 가맹점 "벳이스트" 전용방입니다.\n궁금하신점은 본사로 문의주세여`).catch(() => {});
+        await bot.sendMessage(chatId, tg.startMessage).catch(() => {});
       }
       return NextResponse.json({ ok: true });
     }
@@ -286,11 +291,11 @@ export async function POST(request: Request) {
     // 키보드 버튼 "ADMIN" 탭 → 인라인 URL 버튼 (탭 시 링크 바로 열림)
     if (body.message?.text === "ADMIN") {
       const chatId = body.message.chat.id;
-      const adminUrl = "https://papaya-sorbet-3708f7.netlify.app/admin";
+      const adminUrl = locale === "zh" ? "https://papaya-sorbet-3708f7.netlify.app/zh/admin" : "https://papaya-sorbet-3708f7.netlify.app/admin";
       const reply_markup = {
         inline_keyboard: [[{ text: "ADMIN", url: adminUrl }]],
       };
-      await bot.sendMessage(chatId, "관리자페이지 열기", {
+      await bot.sendMessage(chatId, tg.adminButton, {
         reply_markup: reply_markup as unknown as Record<string, unknown>,
       }).catch((e) => console.error("[webhook] Admin 버튼 전송 실패:", e));
       return NextResponse.json({ ok: true });
