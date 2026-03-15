@@ -170,13 +170,13 @@ export default function Home() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data?.error ?? "로그인에 실패했습니다.");
+        setError(data?.error ?? t.loginFailed);
         return;
       }
 
-      window.location.href = "/";
+      window.location.href = locale === "zh" ? "/zh" : "/";
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t.networkError);
     } finally {
       setLoginLoading(false);
     }
@@ -828,7 +828,7 @@ export default function Home() {
           </form>
           <p className="mt-4 text-center text-slate-500 text-sm">
             {t.noAccountYet}{" "}
-            <Link href="/signup" className="text-sky-400 hover:underline">
+            <Link href={locale === "zh" ? "/zh/signup" : "/signup"} className="text-sky-400 hover:underline">
               {t.signupLink}
             </Link>
           </p>

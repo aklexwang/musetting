@@ -337,9 +337,9 @@ export default function AdminPage() {
       </CardHeader>
       <CardContent className="p-0">
         {txnLoading ? (
-          <div className="flex justify-center py-16 text-slate-400 text-sm">{locale === "zh" ? "加载中..." : "로딩 중..."}</div>
+          <div className="flex justify-center py-16 text-slate-400 text-sm">{t.loading}</div>
         ) : list.length === 0 ? (
-          <div className="flex justify-center py-16 text-slate-500 text-sm">{locale === "zh" ? "暂无记录。" : "내역이 없습니다."}</div>
+          <div className="flex justify-center py-16 text-slate-500 text-sm">{t.noList}</div>
         ) : (
           <Table>
             <TableHeader>
@@ -534,9 +534,9 @@ export default function AdminPage() {
             )}
             {pendingTxns.length > 0 && !txnLoading && (
               <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 px-5 py-4 text-sky-200/95 text-sm flex items-center gap-3">
-                <span className="text-sky-400">거래 대기 {pendingTxns.length}건</span>
+                <span className="text-sky-400">{t.pendingTxn} {pendingTxns.length}{locale === "zh" ? " 条" : "건"}</span>
                 <span className="text-slate-400">·</span>
-                <span>텔레그램에서 [승인]/[거절] 처리하세요.</span>
+                <span>{t.telegramNoticeShort}</span>
               </div>
             )}
           </div>
@@ -545,12 +545,12 @@ export default function AdminPage() {
         <Dialog open={showPendingSignups} onOpenChange={setShowPendingSignups}>
           <DialogContent className="max-w-md rounded-2xl border-slate-700/60 bg-slate-900 shadow-2xl text-slate-100 p-0 gap-0 overflow-hidden">
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-700/50">
-              <DialogTitle className="text-slate-100 font-semibold">가입 대기 목록</DialogTitle>
-              <p className="text-slate-400 text-sm mt-1">텔레그램에서 승인/거절 처리해 주세요.</p>
+              <DialogTitle className="text-slate-100 font-semibold">{t.signupPendingList}</DialogTitle>
+              <p className="text-slate-400 text-sm mt-1">{t.telegramNoticeShort}</p>
             </DialogHeader>
             <div className="max-h-[50vh] overflow-y-auto px-6 py-4">
               {pendingUsers.length === 0 ? (
-                <p className="text-slate-500 text-sm py-6 text-center">대기 중인 가입 요청이 없습니다.</p>
+                <p className="text-slate-500 text-sm py-6 text-center">{t.noPendingSignup}</p>
               ) : (
                 <ul className="space-y-2">
                   {pendingUsers.map((u) => (
@@ -573,22 +573,22 @@ export default function AdminPage() {
         <Dialog open={showPendingTxns} onOpenChange={setShowPendingTxns}>
           <DialogContent className="max-w-md rounded-2xl border-slate-700/60 bg-slate-900 shadow-2xl text-slate-100 p-0 gap-0 overflow-hidden">
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-700/50">
-              <DialogTitle className="text-slate-100 font-semibold">거래 대기 목록</DialogTitle>
-              <p className="text-slate-400 text-sm mt-1">텔레그램에서 승인/거절 처리해 주세요.</p>
+              <DialogTitle className="text-slate-100 font-semibold">{t.txnPendingList}</DialogTitle>
+              <p className="text-slate-400 text-sm mt-1">{t.telegramNoticeShort}</p>
             </DialogHeader>
             <div className="max-h-[50vh] overflow-y-auto px-6 py-4">
               {pendingTxns.length === 0 ? (
-                <p className="text-slate-500 text-sm py-6 text-center">대기 중인 거래가 없습니다.</p>
+                <p className="text-slate-500 text-sm py-6 text-center">{t.noPendingTxn}</p>
               ) : (
                 <ul className="space-y-2">
-                  {pendingTxns.map((t) => (
-                    <li key={t.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800/60 px-4 py-3 text-sm">
+                  {pendingTxns.map((txn) => (
+                    <li key={txn.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800/60 px-4 py-3 text-sm">
                       <div className="min-w-0">
-                        <span className="font-medium text-slate-200 block truncate">{t.user?.username ?? "-"}</span>
-                        <span className="text-slate-500 text-xs">{t.type === "BUY" ? "구매" : "판매"} · {t.amount.toLocaleString("ko-KR")}원</span>
+                        <span className="font-medium text-slate-200 block truncate">{txn.user?.username ?? "-"}</span>
+                        <span className="text-slate-500 text-xs">{txn.type === "BUY" ? t.buy : t.sell} · {txn.amount.toLocaleString(numFmt)}{currencySuffix}</span>
                       </div>
                       <span className="text-slate-500 text-xs tabular-nums shrink-0">
-                        {new Date(t.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                        {new Date(txn.createdAt).toLocaleString(numFmt, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </li>
                   ))}
@@ -602,20 +602,20 @@ export default function AdminPage() {
           <DialogContent className="max-w-lg rounded-2xl border-slate-700/60 bg-slate-900 shadow-2xl text-slate-100 p-0 gap-0 overflow-hidden">
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-700/50">
               <DialogTitle className="text-slate-100 font-semibold">
-                {listModal === "approved_rejected" && "회원목록"}
-                {listModal === "buy" && "구매 신청 회원 목록"}
-                {listModal === "sell" && "판매 신청 회원 목록"}
+                {listModal === "approved_rejected" && t.listModalTitleMembers}
+                {listModal === "buy" && t.listModalTitleBuy}
+                {listModal === "sell" && t.listModalTitleSell}
               </DialogTitle>
               <p className="text-slate-400 text-sm mt-1">
-                {listModal === "approved_rejected" && "승인된 회원과 거부된 회원 데이터입니다."}
-                {listModal === "buy" && "구매를 신청한 회원 데이터입니다."}
-                {listModal === "sell" && "판매를 신청한 회원 데이터입니다."}
+                {listModal === "approved_rejected" && t.listModalDescApproved}
+                {listModal === "buy" && t.listModalDescBuy}
+                {listModal === "sell" && t.listModalDescSell}
               </p>
             </DialogHeader>
             <div className="max-h-[55vh] overflow-y-auto px-6 py-4">
               {listModal === "approved_rejected" && (
                 approvedAndRejectedUsers.length === 0 ? (
-                  <p className="text-slate-500 text-sm py-6 text-center">승인/거부된 회원이 없습니다.</p>
+                  <p className="text-slate-500 text-sm py-6 text-center">{t.noApprovedRejectedMembers}</p>
                 ) : (
                   <ul className="space-y-2">
                     {approvedAndRejectedUsers.map((u) => (
@@ -625,10 +625,10 @@ export default function AdminPage() {
                           <span className="text-slate-500 text-xs">{u.accountHolder}</span>
                         </div>
                         <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded ${u.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
-                          {u.status === "APPROVED" ? "승인" : "거절"}
+                          {u.status === "APPROVED" ? t.approved : t.rejected}
                         </span>
                         <span className="text-slate-500 text-xs tabular-nums shrink-0">
-                          {new Date(u.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          {new Date(u.createdAt).toLocaleString(numFmt, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </li>
                     ))}
@@ -637,22 +637,22 @@ export default function AdminPage() {
               )}
               {listModal === "buy" && (
                 buyTxns.length === 0 ? (
-                  <p className="text-slate-500 text-sm py-6 text-center">구매 신청 내역이 없습니다.</p>
+                  <p className="text-slate-500 text-sm py-6 text-center">{t.noBuyList}</p>
                 ) : (
                   <ul className="space-y-2">
-                    {buyTxns.map((t) => (
-                      <li key={t.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800/60 px-4 py-3 text-sm">
+                    {buyTxns.map((txn) => (
+                      <li key={txn.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800/60 px-4 py-3 text-sm">
                         <div className="min-w-0">
-                          <span className="font-medium text-slate-200 block truncate">{t.user?.username ?? "-"}</span>
-                          <span className="text-slate-400 text-xs">{t.amount.toLocaleString("ko-KR")}원</span>
+                          <span className="font-medium text-slate-200 block truncate">{txn.user?.username ?? "-"}</span>
+                          <span className="text-slate-400 text-xs">{txn.amount.toLocaleString(numFmt)}{currencySuffix}</span>
                         </div>
                         <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded ${
-                          t.status === "PENDING" ? "bg-amber-500/20 text-amber-300" : t.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"
+                          txn.status === "PENDING" ? "bg-amber-500/20 text-amber-300" : txn.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"
                         }`}>
-                          {t.status === "PENDING" ? "대기" : t.status === "APPROVED" ? "승인" : "거절"}
+                          {txn.status === "PENDING" ? t.pending : txn.status === "APPROVED" ? t.approved : t.rejected}
                         </span>
                         <span className="text-slate-500 text-xs tabular-nums shrink-0">
-                          {new Date(t.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          {new Date(txn.createdAt).toLocaleString(numFmt, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </li>
                     ))}
@@ -661,22 +661,22 @@ export default function AdminPage() {
               )}
               {listModal === "sell" && (
                 sellTxns.length === 0 ? (
-                  <p className="text-slate-500 text-sm py-6 text-center">판매 신청 내역이 없습니다.</p>
+                  <p className="text-slate-500 text-sm py-6 text-center">{t.noSellList}</p>
                 ) : (
                   <ul className="space-y-2">
-                    {sellTxns.map((t) => (
-                      <li key={t.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800/60 px-4 py-3 text-sm">
+                    {sellTxns.map((txn) => (
+                      <li key={txn.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800/60 px-4 py-3 text-sm">
                         <div className="min-w-0">
-                          <span className="font-medium text-slate-200 block truncate">{t.user?.username ?? "-"}</span>
-                          <span className="text-slate-400 text-xs">{t.amount.toLocaleString("ko-KR")}원</span>
+                          <span className="font-medium text-slate-200 block truncate">{txn.user?.username ?? "-"}</span>
+                          <span className="text-slate-400 text-xs">{txn.amount.toLocaleString(numFmt)}{currencySuffix}</span>
                         </div>
                         <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded ${
-                          t.status === "PENDING" ? "bg-amber-500/20 text-amber-300" : t.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"
+                          txn.status === "PENDING" ? "bg-amber-500/20 text-amber-300" : txn.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"
                         }`}>
-                          {t.status === "PENDING" ? "대기" : t.status === "APPROVED" ? "승인" : "거절"}
+                          {txn.status === "PENDING" ? t.pending : txn.status === "APPROVED" ? t.approved : t.rejected}
                         </span>
                         <span className="text-slate-500 text-xs tabular-nums shrink-0">
-                          {new Date(t.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          {new Date(txn.createdAt).toLocaleString(numFmt, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </li>
                     ))}
@@ -690,11 +690,11 @@ export default function AdminPage() {
         {menu === "회원목록" && (
           <Card className="rounded-2xl border border-slate-700/50 bg-slate-950/40 overflow-hidden">
             <CardHeader className="border-b border-slate-700/50 px-6 py-5 text-center">
-              <CardTitle className="text-slate-100 font-semibold text-base">회원목록</CardTitle>
+              <CardTitle className="text-slate-100 font-semibold text-base">{t.memberList}</CardTitle>
               <div className="mt-4 flex justify-center">
                 <Input
                   type="text"
-                  placeholder="아이디·예금주·은행명으로 회원 검색"
+                  placeholder={t.memberSearchPlaceholder}
                   value={memberSearch}
                   onChange={(e) => setMemberSearch(e.target.value)}
                   className="max-w-[20rem] h-10 rounded-lg border border-slate-600 bg-slate-800/60 text-slate-200 placeholder:text-slate-500 text-center focus:border-slate-500 focus:ring-2 focus:ring-slate-500/30"
@@ -703,36 +703,36 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent className="p-0">
               {loading ? (
-                <div className="flex justify-center py-20 text-slate-400 text-sm">로딩 중...</div>
+                <div className="flex justify-center py-20 text-slate-400 text-sm">{t.loading}</div>
               ) : fetchError ? (
                 <div className="flex flex-col items-center py-20 gap-4 px-6">
                   <p className="text-red-400/90 text-sm text-center max-w-md">{fetchError}</p>
                   <button type="button" onClick={() => fetchUsers()} className="px-4 py-2.5 rounded-xl bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm font-medium transition-colors">
-                    다시 불러오기
+                    {t.retryLoad}
                   </button>
                 </div>
               ) : users.length === 0 ? (
                 <div className="flex flex-col items-center py-20 gap-3 px-6">
-                  <p className="text-slate-400 text-sm">등록된 회원이 없습니다.</p>
-                  <button type="button" onClick={() => fetchUsers()} className="px-4 py-2.5 rounded-xl bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm font-medium transition-colors">새로고침</button>
+                  <p className="text-slate-400 text-sm">{t.noMembers}</p>
+                  <button type="button" onClick={() => fetchUsers()} className="px-4 py-2.5 rounded-xl bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm font-medium transition-colors">{t.refresh}</button>
                 </div>
               ) : filteredUsers.length === 0 ? (
                 <div className="flex flex-col items-center py-20 gap-3 px-6">
-                  <p className="text-slate-400 text-sm">검색 결과가 없습니다.</p>
+                  <p className="text-slate-400 text-sm">{t.noSearchResults}</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-slate-700/50 hover:bg-transparent">
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">아이디</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">은행</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">계좌번호</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">예금주</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">가입상태</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">상태</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">가입일</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">설정</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">{t.id}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">{t.bank}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">{t.accountNumber}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">{t.accountHolder}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">{t.signupStatus}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">{t.status}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">{t.date}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase tracking-wider px-6 py-4 text-center">{t.setting}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -748,10 +748,10 @@ export default function AdminPage() {
                             </span>
                           </TableCell>
                           <TableCell className="px-6 py-4 text-center text-sm text-slate-400">
-                            {user.terminated ? "해지" : user.suspended ? "이용정지" : "정상"}
+                            {user.terminated ? t.terminated : user.suspended ? t.suspended : t.normal}
                           </TableCell>
                           <TableCell className="text-slate-500 text-sm px-6 py-4 tabular-nums text-center">
-                            {new Date(user.createdAt).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit", year: "numeric" })}
+                            {new Date(user.createdAt).toLocaleDateString(numFmt, { month: "2-digit", day: "2-digit", year: "numeric" })}
                           </TableCell>
                           <TableCell className="px-6 py-4 text-center">
                             <button
@@ -759,7 +759,7 @@ export default function AdminPage() {
                               className="h-7 px-2.5 text-sm font-medium text-slate-400 bg-slate-600/30 border border-slate-500/50 rounded-lg hover:bg-slate-600/60 hover:text-slate-200"
                               onClick={() => setSettingsUser(user)}
                             >
-                              설정
+                              {t.setting}
                             </button>
                           </TableCell>
                         </TableRow>
@@ -775,12 +775,12 @@ export default function AdminPage() {
         <Dialog open={!!settingsUser} onOpenChange={(open) => !open && setSettingsUser(null)}>
           <DialogContent className="bg-slate-900 border-slate-700 text-slate-100 rounded-xl shadow-2xl max-w-[400px]">
             <DialogHeader className="pb-4 border-b border-slate-700">
-              <DialogTitle className="text-slate-50 text-lg font-semibold">회원 설정</DialogTitle>
+              <DialogTitle className="text-slate-50 text-lg font-semibold">{t.memberSetting}</DialogTitle>
             </DialogHeader>
             {settingsUser && (
               <div className="space-y-5 pt-4">
                 <div>
-                  <label className="block text-slate-400 text-sm font-medium mb-1.5">가입 상태</label>
+                  <label className="block text-slate-400 text-sm font-medium mb-1.5">{t.signupStatusLabel}</label>
                   <Select
                     value={settingsForm.status}
                     onValueChange={(v) => setSettingsForm((f) => ({ ...f, status: v as UserStatus }))}
@@ -798,7 +798,7 @@ export default function AdminPage() {
                   </Select>
                 </div>
                 <div>
-                  <label className="block text-slate-400 text-sm font-medium mb-1.5">상태</label>
+                  <label className="block text-slate-400 text-sm font-medium mb-1.5">{t.statusLabel}</label>
                   <Select
                     value={settingsForm.accountStatus}
                     onValueChange={(v) => setSettingsForm((f) => ({ ...f, accountStatus: v as AccountStatusValue }))}
@@ -816,10 +816,10 @@ export default function AdminPage() {
                   </Select>
                 </div>
                 <div className="border-t border-slate-700 pt-4">
-                  <p className="text-slate-400 text-sm font-medium mb-3">계좌번호 변경</p>
+                  <p className="text-slate-400 text-sm font-medium mb-3">{t.accountChangeSection}</p>
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-slate-500 text-xs mb-1">은행명</label>
+                      <label className="block text-slate-500 text-xs mb-1">{t.bankNameLabel}</label>
                       <Input
                         value={settingsForm.bankName}
                         onChange={(e) => setSettingsForm((f) => ({ ...f, bankName: e.target.value }))}
@@ -828,7 +828,7 @@ export default function AdminPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-500 text-xs mb-1">계좌번호</label>
+                      <label className="block text-slate-500 text-xs mb-1">{t.accountNumberLabel}</label>
                       <Input
                         value={settingsForm.accountNumber}
                         onChange={(e) => setSettingsForm((f) => ({ ...f, accountNumber: e.target.value }))}
@@ -837,7 +837,7 @@ export default function AdminPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-500 text-xs mb-1">예금주</label>
+                      <label className="block text-slate-500 text-xs mb-1">{t.accountHolderLabel}</label>
                       <Input
                         value={settingsForm.accountHolder}
                         onChange={(e) => setSettingsForm((f) => ({ ...f, accountHolder: e.target.value }))}
@@ -854,7 +854,7 @@ export default function AdminPage() {
                     className="flex-1 border-slate-500 bg-slate-700/80 text-slate-200 hover:bg-slate-600"
                     onClick={() => setSettingsUser(null)}
                   >
-                    취소
+                    {t.cancel}
                   </Button>
                   <Button
                     type="button"
@@ -862,7 +862,7 @@ export default function AdminPage() {
                     onClick={handleSettingsSave}
                     disabled={settingsSaving}
                   >
-                    {settingsSaving ? "저장 중..." : "저장"}
+                    {settingsSaving ? t.saving : t.save}
                   </Button>
                 </div>
               </div>
@@ -875,7 +875,7 @@ export default function AdminPage() {
             <div className="mb-4 flex justify-center">
               <Input
                 type="text"
-                placeholder="아이디로 회원 검색"
+                placeholder={t.searchByIdPlaceholder}
                 value={memberSearch}
                 onChange={(e) => setMemberSearch(e.target.value)}
                 className="max-w-[20rem] h-10 rounded-lg border border-slate-600 bg-slate-800/60 text-slate-200 placeholder:text-slate-500 text-center focus:border-slate-500 focus:ring-2 focus:ring-slate-500/30"
@@ -889,7 +889,7 @@ export default function AdminPage() {
             <div className="mb-4 flex justify-center">
               <Input
                 type="text"
-                placeholder="아이디로 회원 검색"
+                placeholder={t.searchByIdPlaceholder}
                 value={memberSearch}
                 onChange={(e) => setMemberSearch(e.target.value)}
                 className="max-w-[20rem] h-10 rounded-lg border border-slate-600 bg-slate-800/60 text-slate-200 placeholder:text-slate-500 text-center focus:border-slate-500 focus:ring-2 focus:ring-slate-500/30"
@@ -902,37 +902,37 @@ export default function AdminPage() {
         {menu === "계좌 변경" && (
           <Card className="rounded-2xl border border-slate-700/50 bg-slate-950/40 overflow-hidden">
             <CardHeader className="border-b border-slate-700/50 px-6 py-5 text-center">
-              <CardTitle className="text-slate-100 font-semibold text-base">계좌 변경</CardTitle>
-              <CardDescription className="text-slate-400 text-sm mt-0.5">회원 계좌 변경 신청 및 처리 내역</CardDescription>
+              <CardTitle className="text-slate-100 font-semibold text-base">{t.accountChange}</CardTitle>
+              <CardDescription className="text-slate-400 text-sm mt-0.5">{t.accountChangeList}</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               {accountChangesLoading ? (
-                <div className="flex justify-center py-16 text-slate-400 text-sm">로딩 중...</div>
+                <div className="flex justify-center py-16 text-slate-400 text-sm">{t.loading}</div>
               ) : accountChanges.length === 0 ? (
-                <p className="py-12 text-center text-slate-500 text-sm">계좌 변경 신청 내역이 없습니다.</p>
+                <p className="py-12 text-center text-slate-500 text-sm">{t.noAccountChangeRequests}</p>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-slate-700/50 hover:bg-transparent">
                         <TableHead colSpan={5} className="text-slate-400 font-medium text-xs uppercase tracking-wider px-4 py-3 text-center border-r border-slate-700/50">
-                          변경 전 계좌
+                          {t.beforeAccount}
                         </TableHead>
                         <TableHead colSpan={5} className="text-slate-400 font-medium text-xs uppercase tracking-wider px-4 py-3 text-center">
-                          변경 후 계좌
+                          {t.afterAccount}
                         </TableHead>
                       </TableRow>
                       <TableRow className="border-slate-700/50 hover:bg-transparent">
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">아이디</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">신청 일시</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">이름</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">은행명</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center border-r border-slate-700/50">계좌번호</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">이름</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">은행명</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">계좌번호</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">변경 일시</TableHead>
-                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">상태</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">{t.id}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">{t.appliedAtShort}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">{t.name}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">{t.bankNameLabel}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center border-r border-slate-700/50">{t.accountNumberLabel}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">{t.name}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">{t.bankNameLabel}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">{t.accountNumberLabel}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">{t.changeTime}</TableHead>
+                        <TableHead className="text-slate-400 font-medium text-xs uppercase px-3 py-2 text-center">{t.status}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -940,7 +940,7 @@ export default function AdminPage() {
                         const appliedAt = r.processedAt ? new Date(r.processedAt) : null;
                         const dateStr = (d: Date) =>
                           `${String(d.getMonth() + 1).padStart(2, "0")}. ${String(d.getDate()).padStart(2, "0")}. ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-                        const statusLabel = r.status === "APPROVED" ? "완료" : r.status === "REJECTED" ? "거부" : "대기";
+                        const statusLabel = r.status === "APPROVED" ? t.complete : r.status === "REJECTED" ? t.denied : t.pending;
                         const statusClass =
                           r.status === "APPROVED"
                             ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"

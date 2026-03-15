@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,53 +22,42 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/contexts/LocaleContext";
+import { getTranslations } from "@/lib/translations";
 
 const BANK_LIST = [
-  "국민은행",
-  "기업은행",
-  "농협은행",
-  "신한은행",
-  "우리은행",
-  "하나은행",
-  "SC제일은행",
-  "씨티은행",
-  "카카오뱅크",
-  "케이뱅크",
-  "토스뱅크",
-  "경남은행",
-  "광주은행",
-  "대구은행",
-  "부산은행",
-  "전북은행",
-  "제주은행",
-  "새마을금고",
-  "신협",
-  "우체국",
-  "산업은행",
-  "수협은행",
-  "기타",
+  "국민은행", "기업은행", "농협은행", "신한은행", "우리은행", "하나은행",
+  "SC제일은행", "씨티은행", "카카오뱅크", "케이뱅크", "토스뱅크",
+  "경남은행", "광주은행", "대구은행", "부산은행", "전북은행", "제주은행",
+  "새마을금고", "신협", "우체국", "산업은행", "수협은행", "기타",
 ];
 
-const signupSchema = z.object({
-  username: z
-    .string()
-    .min(1, "아이디를 입력해 주세요.")
-    .min(2, "아이디는 2자 이상이어야 합니다."),
-  password: z
-    .string()
-    .min(1, "비밀번호를 입력해 주세요.")
-    .min(6, "비밀번호는 6자 이상이어야 합니다."),
-  bankName: z.string().min(1, "은행명을 입력해 주세요."),
-  accountNumber: z
-    .string()
-    .min(1, "계좌번호를 입력해 주세요.")
-    .regex(/^[0-9-]+$/, "계좌번호는 숫자만 입력 가능합니다."),
-  accountHolder: z.string().min(1, "예금주를 입력해 주세요."),
-});
+function getSignupSchema(t: {
+  errUsernameRequired: string;
+  errUsernameMin: string;
+  errPasswordRequired: string;
+  errPasswordMin: string;
+  errBankRequired: string;
+  errAccountNumberRequired: string;
+  errAccountNumberRegex: string;
+  errAccountHolderRequired: string;
+}) {
+  return z.object({
+    username: z.string().min(1, t.errUsernameRequired).min(2, t.errUsernameMin),
+    password: z.string().min(1, t.errPasswordRequired).min(6, t.errPasswordMin),
+    bankName: z.string().min(1, t.errBankRequired),
+    accountNumber: z.string().min(1, t.errAccountNumberRequired).regex(/^[0-9-]+$/, t.errAccountNumberRegex),
+    accountHolder: z.string().min(1, t.errAccountHolderRequired),
+  });
+}
 
-type SignupFormValues = z.infer<typeof signupSchema>;
+type SignupFormValues = z.infer<ReturnType<typeof getSignupSchema>>;
 
 export default function SignupPage() {
+  const locale = useLocale();
+  const t = getTranslations(locale).signup;
+  const signupSchema = useMemo(() => getSignupSchema(t), [t]);
+
   const {
     control,
     handleSubmit,
@@ -180,18 +169,18 @@ export default function SignupPage() {
               )}
             </div>
             <CardTitle className="text-xl font-semibold tracking-tight text-slate-50">
-              {rejected ? "가입이 거부되었습니다." : approved ? "가입이 승인되었습니다." : "가입승인 대기중"}
+              {rejected ? t.rejectedTitle : approved ? t.approvedTitle : t.pendingTitle}
             </CardTitle>
             <CardDescription className="text-slate-400 leading-relaxed">
               {rejected ? (
-                "관리자에 의해 가입 요청이 거절되었습니다."
+                t.rejectedDesc
               ) : approved ? (
-                "로그인 화면에서 로그인하실 수 있습니다."
+                t.approvedDesc
               ) : (
                 <div className="flex flex-col items-center justify-center text-center space-y-3 mt-6 py-6">
-                  <p className="text-slate-300">가입 요청이 완료되었습니다.</p>
-                  <p className="text-slate-300">관리자 검토 후 승인되면 로그인하실 수 있습니다.</p>
-                  <p className="text-slate-300">승인 후 이 화면에서 자동으로 로그인 페이지로 이동합니다.</p>
+                  <p className="text-slate-300">{t.pendingLine1}</p>
+                  <p className="text-slate-300">{t.pendingLine2}</p>
+                  <p className="text-slate-300">{t.pendingLine3}</p>
                 </div>
               )}
             </CardDescription>
@@ -201,17 +190,17 @@ export default function SignupPage() {
               <Button
                 type="button"
                 className="w-full bg-slate-600 hover:bg-slate-500 text-slate-100"
-                onClick={() => router.replace("/")}
+                onClick={() => router.replace(locale === "zh" ? "/zh" : "/")}
               >
-                확인
+                {t.confirm}
               </Button>
             ) : approved ? (
               <Button
                 type="button"
                 className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
-                onClick={() => router.replace("/")}
+                onClick={() => router.replace(locale === "zh" ? "/zh" : "/")}
               >
-                확인
+                {t.confirm}
               </Button>
             ) : null}
           </CardContent>
@@ -232,7 +221,7 @@ export default function SignupPage() {
               className="h-10 w-auto"
             />
             <CardTitle className="text-2xl font-semibold tracking-tight text-slate-50 font-[var(--font-geist-sans),system-ui,sans-serif]">
-              AXPAY 회원가입
+              {t.title}
             </CardTitle>
           </div>
         </CardHeader>
@@ -244,9 +233,9 @@ export default function SignupPage() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <Label htmlFor="username" className="text-slate-200">
-                  아이디
+                  {t.username}
                 </Label>
-                <span className="text-red-500 text-sm">BETEAST와 같은 회원아이디를 입력하세요.</span>
+                <span className="text-red-500 text-sm">{t.usernameHint}</span>
               </div>
               <Controller
                 name="username"
@@ -256,7 +245,7 @@ export default function SignupPage() {
                     id="username"
                     type="text"
                     autoComplete="off"
-                    placeholder="아이디를 입력하세요"
+                    placeholder={t.usernamePlaceholder}
                     className="bg-slate-800/50 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-slate-500"
                     aria-invalid={!!errors.username}
                     {...field}
@@ -272,7 +261,7 @@ export default function SignupPage() {
 
             <div className="space-y-2">
               <Label htmlFor="password" className="text-slate-200">
-                비밀번호
+                {t.password}
               </Label>
               <Controller
                 name="password"
@@ -282,7 +271,7 @@ export default function SignupPage() {
                     id="password"
                     type="password"
                     autoComplete="new-password"
-                    placeholder="6자 이상 입력하세요"
+                    placeholder={t.passwordPlaceholder}
                     className="bg-slate-800/50 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-slate-500"
                     aria-invalid={!!errors.password}
                     {...field}
@@ -298,7 +287,7 @@ export default function SignupPage() {
 
             <div className="space-y-2">
               <Label htmlFor="bankName" className="text-slate-200">
-                은행명
+                {t.bankName}
               </Label>
               <Controller
                 name="bankName"
@@ -313,14 +302,14 @@ export default function SignupPage() {
                       id="bankName"
                       className="w-full border-slate-700 bg-slate-800/50 text-slate-100 focus:ring-slate-500 data-[placeholder]:text-slate-500"
                     >
-                      <SelectValue placeholder="은행을 선택하세요" />
+                      <SelectValue placeholder={t.bankPlaceholder} />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-700 max-h-60">
                       <SelectItem
                         value=""
                         className="text-slate-500 focus:bg-slate-800 focus:text-slate-200"
                       >
-                        은행을 선택하세요
+                        {t.bankPlaceholder}
                       </SelectItem>
                       {BANK_LIST.map((bank) => (
                         <SelectItem
@@ -328,7 +317,7 @@ export default function SignupPage() {
                           value={bank}
                           className="text-slate-200 focus:bg-slate-800 focus:text-slate-100"
                         >
-                          {bank}
+                          {t.bankLabels[bank] ?? bank}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -344,7 +333,7 @@ export default function SignupPage() {
 
             <div className="space-y-2">
               <Label htmlFor="accountNumber" className="text-slate-200">
-                계좌번호
+                {t.accountNumber}
               </Label>
               <Controller
                 name="accountNumber"
@@ -355,7 +344,7 @@ export default function SignupPage() {
                     type="text"
                     inputMode="numeric"
                     autoComplete="off"
-                    placeholder="숫자만 입력하세요"
+                    placeholder={t.accountNumberPlaceholder}
                     className="bg-slate-800/50 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-slate-500"
                     aria-invalid={!!errors.accountNumber}
                     {...field}
@@ -375,7 +364,7 @@ export default function SignupPage() {
 
             <div className="space-y-2">
               <Label htmlFor="accountHolder" className="text-slate-200">
-                예금주
+                {t.accountHolder}
               </Label>
               <Controller
                 name="accountHolder"
@@ -385,7 +374,7 @@ export default function SignupPage() {
                     id="accountHolder"
                     type="text"
                     autoComplete="off"
-                    placeholder="예금주명을 입력하세요"
+                    placeholder={t.accountHolderPlaceholder}
                     className="bg-slate-800/50 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-slate-500"
                     aria-invalid={!!errors.accountHolder}
                     {...field}
@@ -404,7 +393,7 @@ export default function SignupPage() {
               className="w-full h-10 bg-slate-700 hover:bg-slate-600 text-slate-100 transition-colors duration-200 font-medium"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "처리 중..." : "가입 요청"}
+              {isSubmitting ? t.submitting : t.submitButton}
             </Button>
           </form>
         </CardContent>
