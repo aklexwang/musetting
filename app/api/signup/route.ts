@@ -3,6 +3,7 @@ import { z } from "zod";
 import bcrypt from "bcrypt";
 import TelegramBot from "node-telegram-bot-api";
 import { prisma } from "@/lib/prisma";
+import { getDefaultFranchiseId } from "@/lib/default-franchise";
 
 const signupBodySchema = z.object({
   username: z
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const defaultFranchiseId = await getDefaultFranchiseId();
 
     const user = await prisma.user.create({
       data: {
@@ -61,6 +63,7 @@ export async function POST(request: Request) {
         accountHolder,
         role: "USER",
         status: "PENDING",
+        franchiseId: defaultFranchiseId ?? undefined,
       },
     });
 

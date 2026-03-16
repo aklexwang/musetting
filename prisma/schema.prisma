@@ -12,8 +12,27 @@ datasource db {
   provider = "postgresql"
 }
 
+// 본사 어드민: 가맹점(프랜차이즈) 목록
+model Franchise {
+  id           String   @id @default(cuid())
+  name         String   // 가맹점명
+  password     String?  // 가맹점 어드민 로그인용 (해시)
+  contact      String?  // 연락처 @아이디
+  telegramCode String?  // 텔봇코드
+  apiUrl       String?  // 로그인 API 주소
+  status       String   @default("ACTIVE") // ACTIVE | SUSPENDED
+  token        String?  // Token
+  memberUrl    String?  // 회원 URL
+  remark       String?  // 비고
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  users        User[]
+}
+
 model User {
   id             String        @id @default(cuid())
+  franchiseId    String?       // 본사 연동: 소속 가맹점
+  franchise      Franchise?    @relation(fields: [franchiseId], references: [id], onDelete: SetNull)
   username       String        @unique
   password       String
   bankName       String
