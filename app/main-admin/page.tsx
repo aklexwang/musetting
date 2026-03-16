@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type TabId = "현황" | "가맹점리스트";
+type TabId = "현황" | "가맹점리스트" | "회원목록" | "구매" | "판매" | "계좌변경";
 
 interface FranchiseItem {
   id: string;
@@ -48,6 +48,43 @@ interface FranchiseItem {
   memberCount: number;
 }
 
+interface MemberItem {
+  id: string;
+  username: string;
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  status: string;
+  suspended: boolean;
+  terminated: boolean;
+  createdAt: string;
+}
+
+interface TransactionItem {
+  id: string;
+  type: string;
+  amount: number;
+  status: string;
+  createdAt: string;
+  franchiseName: string;
+  username: string;
+}
+
+interface AccountChangeItem {
+  id: string;
+  franchiseName: string;
+  username: string;
+  beforeHolder: string;
+  beforeBank: string;
+  beforeAccount: string;
+  afterHolder: string;
+  afterBank: string;
+  afterAccount: string;
+  status: string;
+  createdAt: string;
+  processedAt: string | null;
+}
+
 export default function MainAdminPage() {
   const [tab, setTab] = useState<TabId>("현황");
   const [franchises, setFranchises] = useState<FranchiseItem[]>([]);
@@ -59,6 +96,18 @@ export default function MainAdminPage() {
   const [editing, setEditing] = useState<FranchiseItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [selectedFranchiseId, setSelectedFranchiseId] = useState<string>("");
+  const [members, setMembers] = useState<MemberItem[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [buyList, setBuyList] = useState<TransactionItem[]>([]);
+  const [sellList, setSellList] = useState<TransactionItem[]>([]);
+  const [buyLoading, setBuyLoading] = useState(false);
+  const [sellLoading, setSellLoading] = useState(false);
+  const [accountChanges, setAccountChanges] = useState<AccountChangeItem[]>([]);
+  const [accountChangesLoading, setAccountChangesLoading] = useState(false);
+  const [franchiseSearch, setFranchiseSearch] = useState("");
+  const [accountChangeUserSearch, setAccountChangeUserSearch] = useState("");
+  const [accountChangeStatusFilter, setAccountChangeStatusFilter] = useState<string>("");
 
   const [addForm, setAddForm] = useState({
     name: "",
@@ -100,6 +149,79 @@ export default function MainAdminPage() {
   useEffect(() => {
     fetchFranchises();
   }, []);
+
+  const fetchMembers = async (franchiseId: string) => {
+    if (!franchiseId) {
+      setMembers([]);
+      return;
+    }
+    setMembersLoading(true);
+    try {
+      const res = await fetch(`/api/main-admin/franchises/${franchiseId}/users`);
+      const data = await res.json();
+      if (res.ok && Array.isArray(data)) setMembers(data);
+      else setMembers([]);
+    } catch {
+      setMembers([]);
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === "회원목록" && selectedFranchiseId) fetchMembers(selectedFranchiseId);
+    else if (!selectedFranchiseId) setMembers([]);
+  }, [tab, selectedFranchiseId]);
+
+  const fetchBuyList = async () => {
+    setBuyLoading(true);
+    try {
+      const res = await fetch("/api/main-admin/transactions?type=BUY");
+      const data = await res.json();
+      if (res.ok && Array.isArray(data)) setBuyList(data);
+      else setBuyList([]);
+    } catch {
+      setBuyList([]);
+    } finally {
+      setBuyLoading(false);
+    }
+  };
+  const fetchSellList = async () => {
+    setSellLoading(true);
+    try {
+      const res = await fetch("/api/main-admin/transactions?type=SELL");
+      const data = await res.json();
+      if (res.ok && Array.isArray(data)) setSellList(data);
+      else setSellList([]);
+    } catch {
+      setSellList([]);
+    } finally {
+      setSellLoading(false);
+    }
+  };
+  const fetchAccountChanges = async () => {
+    setAccountChangesLoading(true);
+    try {
+      const res = await fetch("/api/main-admin/account-change-requests");
+      const data = await res.json();
+      if (res.ok && Array.isArray(data)) setAccountChanges(data);
+      else setAccountChanges([]);
+    } catch {
+      setAccountChanges([]);
+    } finally {
+      setAccountChangesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === "구매") fetchBuyList();
+  }, [tab]);
+  useEffect(() => {
+    if (tab === "판매") fetchSellList();
+  }, [tab]);
+  useEffect(() => {
+    if (tab === "계좌변경") fetchAccountChanges();
+  }, [tab]);
 
   const totalCount = franchises.length;
   const activeCount = franchises.filter((f) => f.status === "ACTIVE").length;
@@ -254,6 +376,42 @@ export default function MainAdminPage() {
           >
             가맹점 리스트
           </button>
+          <button
+            type="button"
+            onClick={() => setTab("회원목록")}
+            className={`text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              tab === "회원목록" ? "bg-slate-600 text-white" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+            }`}
+          >
+            회원목록
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("구매")}
+            className={`text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              tab === "구매" ? "bg-slate-600 text-white" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+            }`}
+          >
+            구매
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("판매")}
+            className={`text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              tab === "판매" ? "bg-slate-600 text-white" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+            }`}
+          >
+            판매
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("계좌변경")}
+            className={`text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              tab === "계좌변경" ? "bg-slate-600 text-white" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+            }`}
+          >
+            계좌변경
+          </button>
         </nav>
       </aside>
 
@@ -326,6 +484,312 @@ export default function MainAdminPage() {
                   {seeding ? "연동 중..." : "기존 회원 연동"}
                 </Button>
               </div>
+            </section>
+          )}
+
+          {tab === "회원목록" && (
+            <section>
+              <Card className="rounded-2xl border border-slate-700/50 bg-slate-950/40 overflow-hidden">
+                <CardHeader className="border-b border-slate-700/50 px-6 py-5 text-center">
+                  <CardTitle className="text-slate-100 font-semibold text-base">가맹점별 회원 리스트</CardTitle>
+                  <CardDescription className="text-slate-400 text-sm mt-0.5">가맹점을 선택하면 해당 가맹점 회원 목록이 표시됩니다</CardDescription>
+                  <div className="mt-4 flex justify-center">
+                    <Select value={selectedFranchiseId} onValueChange={(v) => setSelectedFranchiseId(v ?? "")}>
+                      <SelectTrigger className="w-full max-w-xs bg-slate-800 border-slate-600 text-slate-200">
+                        <SelectValue placeholder="가맹점 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {franchises.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            {f.name} ({f.memberCount}명)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-slate-700/50 hover:bg-transparent">
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">아이디</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">은행</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">계좌번호</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">예금주</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">가입상태</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">상태</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">가입일</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">설정</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {!selectedFranchiseId ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-slate-500 text-center py-12">가맹점을 선택하세요</TableCell>
+                          </TableRow>
+                        ) : membersLoading ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-slate-500 text-center py-12">로딩 중...</TableCell>
+                          </TableRow>
+                        ) : members.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-slate-500 text-center py-12">해당 가맹점에 등록된 회원이 없습니다</TableCell>
+                          </TableRow>
+                        ) : (
+                          members.map((m) => {
+                            const accountStatus = m.terminated ? "해지" : m.suspended ? "정지" : "정상";
+                            const signupStatus = m.status === "PENDING" ? "대기" : m.status === "APPROVED" ? "승인" : "거절";
+                            const selectedFranchise = franchises.find((f) => f.id === selectedFranchiseId);
+                            return (
+                              <TableRow key={m.id} className="border-slate-700/40 hover:bg-slate-800/40">
+                                <TableCell className="text-slate-200 font-medium px-4 py-3 text-center">{m.username}</TableCell>
+                                <TableCell className="text-slate-400 px-4 py-3 text-center">{m.bankName}</TableCell>
+                                <TableCell className="text-slate-400 font-mono text-sm px-4 py-3 text-center">{m.accountNumber}</TableCell>
+                                <TableCell className="text-slate-400 px-4 py-3 text-center">{m.accountHolder}</TableCell>
+                                <TableCell className="px-4 py-3 text-center">
+                                  <span className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-medium ${m.status === "PENDING" ? "bg-amber-500/20 text-amber-300" : m.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+                                    {signupStatus}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="px-4 py-3 text-center">
+                                  <span className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-medium ${accountStatus === "해지" ? "bg-slate-500/20 text-slate-400" : accountStatus === "정지" ? "bg-red-500/20 text-red-300" : "bg-emerald-500/20 text-emerald-300"}`}>
+                                    {accountStatus}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-slate-400 tabular-nums px-4 py-3 text-center text-sm">{formatDate(m.createdAt)}</TableCell>
+                                <TableCell className="px-4 py-3 text-center">
+                                  {selectedFranchise?.apiUrl ? (
+                                    <a href={`${selectedFranchise.apiUrl.replace(/\/$/, "")}/admin`} target="_blank" rel="noopener noreferrer" className="text-xs text-sky-400 hover:underline">
+                                      어드민
+                                    </a>
+                                  ) : (
+                                    <span className="text-slate-500 text-xs">-</span>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+          )}
+
+          {tab === "구매" && (
+            <section>
+              <Card className="rounded-2xl border border-slate-700/50 bg-slate-950/40 overflow-hidden">
+                <CardHeader className="border-b border-slate-700/50 px-6 py-5 text-center">
+                  <CardTitle className="text-slate-100 font-semibold text-base">구매</CardTitle>
+                  <CardDescription className="text-slate-400 text-sm mt-0.5">전체 가맹점 구매 신청 내역</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-slate-700/50 hover:bg-transparent">
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">소속 가맹점</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">아이디</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">금액</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">상태</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">신청일시</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {buyLoading ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-slate-500 text-center py-12">로딩 중...</TableCell>
+                          </TableRow>
+                        ) : buyList.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-slate-500 text-center py-12">구매 내역이 없습니다</TableCell>
+                          </TableRow>
+                        ) : (
+                          buyList.map((t) => {
+                            const statusLabel = t.status === "PENDING" ? "대기" : t.status === "APPROVED" ? "승인" : "거절";
+                            return (
+                              <TableRow key={t.id} className="border-slate-700/40 hover:bg-slate-800/40">
+                                <TableCell className="text-slate-400 px-4 py-3 text-center">{t.franchiseName}</TableCell>
+                                <TableCell className="text-slate-200 font-medium px-4 py-3 text-center">{t.username}</TableCell>
+                                <TableCell className="text-slate-300 font-mono px-4 py-3 text-center tabular-nums">{t.amount.toLocaleString("ko-KR")}원</TableCell>
+                                <TableCell className="px-4 py-3 text-center">
+                                  <span className={`inline-flex rounded-md px-2.5 py-0.5 text-xs font-medium ${t.status === "PENDING" ? "bg-amber-500/20 text-amber-300" : t.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>{statusLabel}</span>
+                                </TableCell>
+                                <TableCell className="text-slate-400 tabular-nums px-4 py-3 text-center text-sm">{formatDate(t.createdAt)}</TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+          )}
+
+          {tab === "판매" && (
+            <section>
+              <Card className="rounded-2xl border border-slate-700/50 bg-slate-950/40 overflow-hidden">
+                <CardHeader className="border-b border-slate-700/50 px-6 py-5 text-center">
+                  <CardTitle className="text-slate-100 font-semibold text-base">판매</CardTitle>
+                  <CardDescription className="text-slate-400 text-sm mt-0.5">전체 가맹점 판매 신청 내역</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-slate-700/50 hover:bg-transparent">
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">소속 가맹점</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">아이디</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">금액</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">상태</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">신청일시</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sellLoading ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-slate-500 text-center py-12">로딩 중...</TableCell>
+                          </TableRow>
+                        ) : sellList.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-slate-500 text-center py-12">판매 내역이 없습니다</TableCell>
+                          </TableRow>
+                        ) : (
+                          sellList.map((t) => {
+                            const statusLabel = t.status === "PENDING" ? "대기" : t.status === "APPROVED" ? "승인" : "거절";
+                            return (
+                              <TableRow key={t.id} className="border-slate-700/40 hover:bg-slate-800/40">
+                                <TableCell className="text-slate-400 px-4 py-3 text-center">{t.franchiseName}</TableCell>
+                                <TableCell className="text-slate-200 font-medium px-4 py-3 text-center">{t.username}</TableCell>
+                                <TableCell className="text-slate-300 font-mono px-4 py-3 text-center tabular-nums">{t.amount.toLocaleString("ko-KR")}원</TableCell>
+                                <TableCell className="px-4 py-3 text-center">
+                                  <span className={`inline-flex rounded-md px-2.5 py-0.5 text-xs font-medium ${t.status === "PENDING" ? "bg-amber-500/20 text-amber-300" : t.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>{statusLabel}</span>
+                                </TableCell>
+                                <TableCell className="text-slate-400 tabular-nums px-4 py-3 text-center text-sm">{formatDate(t.createdAt)}</TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+          )}
+
+          {tab === "계좌변경" && (
+            <section>
+              <Card className="rounded-2xl border border-slate-700/50 bg-slate-950/40 overflow-hidden">
+                <CardHeader className="border-b border-slate-700/50 px-6 py-5 text-center">
+                  <CardTitle className="text-slate-100 font-semibold text-base">계좌 변경</CardTitle>
+                  <CardDescription className="text-slate-400 text-sm mt-0.5">전체 가맹점 회원 계좌 변경 신청 및 처리 내역 (총 어드민)</CardDescription>
+                  <div className="mt-4 flex flex-wrap justify-center gap-3">
+                    <Input
+                      placeholder="가맹점 검색"
+                      value={franchiseSearch}
+                      onChange={(e) => setFranchiseSearch(e.target.value)}
+                      className="max-w-[180px] bg-slate-800/60 border-slate-600 text-slate-200 text-center placeholder:text-slate-500 text-sm"
+                    />
+                    <Input
+                      placeholder="아이디·이름으로 검색"
+                      value={accountChangeUserSearch}
+                      onChange={(e) => setAccountChangeUserSearch(e.target.value)}
+                      className="max-w-[200px] bg-slate-800/60 border-slate-600 text-slate-200 text-center placeholder:text-slate-500 text-sm"
+                    />
+                    <Select value={accountChangeStatusFilter} onValueChange={(v) => setAccountChangeStatusFilter(v ?? "")}>
+                      <SelectTrigger className="w-[120px] h-9 border-slate-600 bg-slate-800 text-slate-300 text-xs">
+                        <SelectValue placeholder="상태" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">전체</SelectItem>
+                        <SelectItem value="PENDING">대기</SelectItem>
+                        <SelectItem value="APPROVED">승인</SelectItem>
+                        <SelectItem value="REJECTED">거절</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-slate-700/50 hover:bg-transparent">
+                          <TableHead className="text-slate-400 text-xs uppercase px-3 py-2.5 text-center bg-slate-800/30">소속 가맹점</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-3 py-2.5 text-center bg-slate-800/30">아이디</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-3 py-2.5 text-center bg-slate-800/30">신청 일시</TableHead>
+                          <TableHead colSpan={3} className="text-xs uppercase px-3 py-2.5 text-center bg-red-500/20 text-red-200 border-l border-slate-600/50">변경 전 계좌</TableHead>
+                          <TableHead colSpan={3} className="text-xs uppercase px-3 py-2.5 text-center bg-emerald-500/20 text-emerald-200 border-l border-slate-600/50">변경 후 계좌</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-3 py-2.5 text-center bg-slate-800/30 border-l border-slate-600/50">변경 일시</TableHead>
+                          <TableHead className="text-slate-400 text-xs uppercase px-3 py-2.5 text-center bg-slate-800/30">상태</TableHead>
+                        </TableRow>
+                        <TableRow className="border-slate-700/50 hover:bg-transparent">
+                          <TableHead className="bg-slate-800/20 text-slate-500 text-xs px-3 py-2" />
+                          <TableHead className="bg-slate-800/20 text-slate-500 text-xs px-3 py-2" />
+                          <TableHead className="bg-slate-800/20 text-slate-500 text-xs px-3 py-2" />
+                          <TableHead className="bg-red-500/10 text-red-300/90 text-xs px-3 py-2">이름</TableHead>
+                          <TableHead className="bg-red-500/10 text-red-300/90 text-xs px-3 py-2">은행명</TableHead>
+                          <TableHead className="bg-red-500/10 text-red-300/90 text-xs px-3 py-2">계좌번호</TableHead>
+                          <TableHead className="bg-emerald-500/10 text-emerald-300/90 text-xs px-3 py-2">이름</TableHead>
+                          <TableHead className="bg-emerald-500/10 text-emerald-300/90 text-xs px-3 py-2">은행명</TableHead>
+                          <TableHead className="bg-emerald-500/10 text-emerald-300/90 text-xs px-3 py-2">계좌번호</TableHead>
+                          <TableHead className="bg-slate-800/20 text-slate-500 text-xs px-3 py-2" />
+                          <TableHead className="bg-slate-800/20 text-slate-500 text-xs px-3 py-2" />
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {accountChangesLoading ? (
+                          <TableRow>
+                            <TableCell colSpan={11} className="text-slate-500 text-center py-12">로딩 중...</TableCell>
+                          </TableRow>
+                        ) : (() => {
+                          const fSearch = franchiseSearch.trim().toLowerCase();
+                          const uSearch = accountChangeUserSearch.trim().toLowerCase();
+                          const filtered = accountChanges.filter((r) => {
+                            const matchF = !fSearch || (r.franchiseName || "").toLowerCase().includes(fSearch);
+                            const matchU = !uSearch || (r.username || "").toLowerCase().includes(uSearch) || (r.beforeHolder || "").toLowerCase().includes(uSearch) || (r.afterHolder || "").toLowerCase().includes(uSearch);
+                            const matchS = !accountChangeStatusFilter || r.status === accountChangeStatusFilter;
+                            return matchF && matchU && matchS;
+                          });
+                          if (filtered.length === 0) {
+                            return (
+                              <TableRow>
+                                <TableCell colSpan={11} className="text-slate-500 text-center py-12">계좌 변경 내역이 없습니다</TableCell>
+                              </TableRow>
+                            );
+                          }
+                          return filtered.map((r) => {
+                            const statusLabel = r.status === "PENDING" ? "대기" : r.status === "APPROVED" ? "승인" : "거절";
+                            const changeDate = r.processedAt || r.createdAt;
+                            return (
+                              <TableRow key={r.id} className="border-slate-700/40 hover:bg-slate-800/40">
+                                <TableCell className="text-slate-400 px-3 py-2.5 text-center text-sm bg-slate-800/20">{r.franchiseName}</TableCell>
+                                <TableCell className="text-slate-200 font-medium px-3 py-2.5 text-center text-sm bg-slate-800/20">{r.username}</TableCell>
+                                <TableCell className="text-slate-400 tabular-nums px-3 py-2.5 text-center text-xs bg-slate-800/20">{formatDate(r.createdAt)}</TableCell>
+                                <TableCell className="text-red-200/90 px-3 py-2.5 text-center text-sm bg-red-500/10">{r.beforeHolder}</TableCell>
+                                <TableCell className="text-red-200/90 px-3 py-2.5 text-center text-sm bg-red-500/10">{r.beforeBank}</TableCell>
+                                <TableCell className="text-red-200/90 font-mono text-xs px-3 py-2.5 text-center bg-red-500/10">{r.beforeAccount}</TableCell>
+                                <TableCell className="text-emerald-200/90 px-3 py-2.5 text-center text-sm bg-emerald-500/10">{r.afterHolder}</TableCell>
+                                <TableCell className="text-emerald-200/90 px-3 py-2.5 text-center text-sm bg-emerald-500/10">{r.afterBank}</TableCell>
+                                <TableCell className="text-emerald-200/90 font-mono text-xs px-3 py-2.5 text-center bg-emerald-500/10">{r.afterAccount}</TableCell>
+                                <TableCell className="text-slate-400 tabular-nums px-3 py-2.5 text-center text-xs bg-slate-800/20">{formatDate(changeDate)}</TableCell>
+                                <TableCell className="px-3 py-2.5 text-center bg-slate-800/20">
+                                  <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${r.status === "PENDING" ? "bg-amber-500/20 text-amber-300" : r.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>{statusLabel}</span>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          });
+                        })()}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
             </section>
           )}
 
