@@ -271,6 +271,7 @@ export async function POST(request: Request) {
 
     if (body.message?.text === "/start") {
       const chatId = body.message.chat.id;
+      const startText = tg.startMessage.replace(/\{chatId\}/g, String(chatId));
       const reply_markup = {
         keyboard: [[{ text: "ADMIN" }]],
         resize_keyboard: true,
@@ -278,12 +279,12 @@ export async function POST(request: Request) {
       try {
         await bot.sendMessage(
           chatId,
-          tg.startMessage,
+          startText,
           { reply_markup: reply_markup as unknown as Record<string, unknown> }
         );
       } catch (e) {
         console.error("[webhook] /start sendMessage 실패:", e);
-        await bot.sendMessage(chatId, tg.startMessage).catch(() => {});
+        await bot.sendMessage(chatId, startText).catch(() => {});
       }
       return NextResponse.json({ ok: true });
     }

@@ -191,7 +191,7 @@ export const translations = {
       name: "이름",
     },
     telegram: {
-      startMessage: "이 채팅방은 가맹점 \"벳이스트\" 전용방입니다.\n궁금하신점은 본사로 문의주세여",
+      startMessage: "이 채팅의 Chat ID는 {chatId} 입니다.\n.env에 TELEGRAM_ADMIN_CHAT_ID={chatId} 로 설정하세요.",
       adminButton: "관리자페이지 열기",
       listSignup: "최근 가입 요청/회원",
       listBuy: "최근 구매 요청",
@@ -436,7 +436,7 @@ export const translations = {
       name: "姓名",
     },
     telegram: {
-      startMessage: "本群为加盟店「贝易斯特」专用。\n如有疑问请联系总部。",
+      startMessage: "此聊天的 Chat ID 为 {chatId}。\n请在 .env 中设置 TELEGRAM_ADMIN_CHAT_ID={chatId}。",
       adminButton: "打开管理后台",
       listSignup: "最近注册/会员",
       listBuy: "最近购买请求",
