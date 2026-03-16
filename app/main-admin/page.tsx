@@ -362,7 +362,7 @@ export default function MainAdminPage() {
                           <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">텔봇코드</TableHead>
                           <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">로그인 API 주소</TableHead>
                           <TableHead className="text-slate-400 text-xs uppercase px-4 py-3 text-center">
-                            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "")}>
                               <SelectTrigger className="w-[100px] h-8 border-slate-600 bg-slate-800 text-slate-300 text-xs">
                                 <SelectValue placeholder="상태" />
                               </SelectTrigger>
@@ -453,7 +453,7 @@ export default function MainAdminPage() {
             </div>
             <div className="space-y-2">
               <label className="text-xs text-slate-400 block text-center">상태</label>
-              <Select value={addForm.status} onValueChange={(v) => setAddForm((p) => ({ ...p, status: v }))}>
+              <Select value={addForm.status} onValueChange={(v) => setAddForm((p) => ({ ...p, status: v ?? "ACTIVE" }))}>
                 <SelectTrigger className="bg-slate-800 border-slate-600 text-center w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -508,7 +508,7 @@ export default function MainAdminPage() {
             </div>
             <div className="space-y-2">
               <label className="text-xs text-slate-400 block text-center">상태</label>
-              <Select value={editForm.status} onValueChange={(v) => setEditForm((p) => ({ ...p, status: v }))}>
+              <Select value={editForm.status} onValueChange={(v) => setEditForm((p) => ({ ...p, status: v ?? "ACTIVE" }))}>
                 <SelectTrigger className="bg-slate-800 border-slate-600 text-center w-full">
                   <SelectValue />
                 </SelectTrigger>
