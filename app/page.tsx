@@ -377,7 +377,7 @@ export default function Home() {
           {t.logout}
         </button>
         <div className="w-full max-w-[20rem] py-2.5 flex justify-center">
-          <img src="/axpay-logo.png" alt="AXPAY" className="h-10 w-auto max-w-full object-contain" />
+          <img src="/axpay-logo.png" alt="AXPAY" className="w-full h-auto object-contain" />
         </div>
         <button
           type="button"
@@ -769,8 +769,8 @@ export default function Home() {
     <div className="min-h-screen w-full bg-slate-950 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-slate-900/95 border-slate-800 ring-1 ring-slate-800 shadow-2xl">
         <CardHeader className="space-y-1.5 pb-6">
-          <div className="flex flex-col items-center gap-2">
-            <img src="/axpay-logo.png" alt="AXPAY" className="h-10 w-auto max-w-full object-contain" />
+          <div className="flex flex-row items-center justify-center gap-3">
+            <img src="/axpay-logo.png" alt="AXPAY" className="h-10 w-auto object-contain" />
             <span className="text-2xl font-bold tracking-tight text-white">LOGIN</span>
           </div>
         </CardHeader>
