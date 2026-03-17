@@ -376,9 +376,15 @@ export default function Home() {
         >
           {t.logout}
         </button>
-        <div className="text-xl font-semibold tracking-tight text-slate-100 bg-slate-800/50 border border-slate-600/60 rounded-xl px-5 py-2.5 shadow-sm">
+        <h1
+          className="w-full max-w-[20rem] py-2.5 text-center text-[1.5rem] font-bold tracking-tight text-white"
+          style={{
+            textShadow:
+              "0 2px 4px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.08), 0 1px 0 rgba(255,255,255,0.15)",
+          }}
+        >
           AXPAY
-        </div>
+        </h1>
         <button
           type="button"
           onClick={() => setHistoryOpen(true)}

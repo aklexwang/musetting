@@ -223,7 +223,13 @@ export default function SignupPage() {
     <div className="min-h-screen w-full bg-slate-950 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-slate-900/95 border-slate-800 ring-1 ring-slate-800 shadow-2xl shadow-black/30">
         <CardHeader className="space-y-1.5 pb-6">
-          <CardTitle className="text-2xl font-semibold tracking-tight text-slate-50 font-[var(--font-geist-sans),system-ui,sans-serif] text-center">
+          <CardTitle
+            className="text-3xl font-bold tracking-tight text-white font-[var(--font-geist-sans),system-ui,sans-serif] text-center"
+            style={{
+              textShadow:
+                "0 2px 4px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.08), 0 1px 0 rgba(255,255,255,0.15)",
+            }}
+          >
             {t.title}
           </CardTitle>
         </CardHeader>
