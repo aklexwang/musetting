@@ -377,7 +377,7 @@ export default function Home() {
           {t.logout}
         </button>
         <div className="w-full max-w-[20rem] py-2.5 flex justify-center">
-          <img src="/axpay-logo.jpg" alt="AXPAY" className="w-full h-auto object-contain" />
+          <img src="/AAA.jpg" alt="AXPAY" className="w-full h-auto object-contain" />
         </div>
         <button
           type="button"
