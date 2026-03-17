@@ -224,7 +224,7 @@ export default function SignupPage() {
       <Card className="w-full max-w-md bg-slate-900/95 border-slate-800 ring-1 ring-slate-800 shadow-2xl shadow-black/30">
         <CardHeader className="space-y-1.5 pb-6">
           <div className="flex flex-row items-center justify-center gap-2">
-            <img src="/axpay-logo.jpg" alt="AXPAY" className="h-8 w-auto object-contain" />
+            <img src="/axpay-logo.jpg" alt="AXPAY" className="h-[1.875rem] w-auto object-contain" />
             <span className="text-3xl font-bold tracking-tight text-white font-[var(--font-geist-sans),system-ui,sans-serif]">
               {t.title.replace(/^AXPAY\s+/, "")}
             </span>
