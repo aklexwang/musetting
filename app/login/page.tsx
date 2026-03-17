@@ -73,9 +73,8 @@ export default function LoginPage() {
     <div className="min-h-screen w-full bg-slate-950 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-slate-900/95 border-slate-800 ring-1 ring-slate-800 shadow-2xl">
         <CardHeader className="space-y-1.5 pb-6">
-          <div className="flex flex-row items-center justify-center gap-3">
-            <img src="/axpay-logo.jpg" alt="AXPAY" className="h-10 w-auto object-contain" />
-            <span className="text-2xl font-bold tracking-tight text-white">LOGIN</span>
+          <div className="flex justify-center">
+            <img src="/axpay-logo.jpg" alt="AXPAY" className="h-14 w-auto object-contain" />
           </div>
         </CardHeader>
         <CardContent>
