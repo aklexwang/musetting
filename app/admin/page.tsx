@@ -457,28 +457,30 @@ export default function AdminPage() {
                             {new Date(item.createdAt).toLocaleString(numFmt, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3 py-3 px-4 text-sm">
-                          <div className="flex flex-col items-center text-center">
+                        <div className="grid grid-cols-5 gap-x-2 sm:gap-x-4 gap-y-1 py-3 px-4 text-sm min-w-0">
+                          <div className="flex flex-col items-center text-center min-w-0">
                             <span className="text-xs text-slate-500">{t.id}</span>
-                            <span className="text-slate-200 font-medium mt-0.5">{item.username}</span>
+                            <span className="text-slate-200 font-medium mt-0.5 truncate max-w-full">{item.username}</span>
                           </div>
-                          <div className="flex flex-col items-center text-center">
+                          <div className="flex flex-col items-center text-center min-w-0">
                             <span className="text-xs text-slate-500">{t.bank}</span>
-                            <span className="text-slate-200 font-medium mt-0.5">{item.bankName}</span>
+                            <span className="text-slate-200 font-medium mt-0.5 truncate max-w-full">{item.bankName}</span>
                           </div>
-                          <div className="flex flex-col items-center text-center">
+                          <div className="flex flex-col items-center text-center min-w-0">
                             <span className="text-xs text-slate-500">{t.accountNumber}</span>
-                            <span className="text-slate-200 font-mono text-xs mt-0.5">{item.accountNumber}</span>
+                            <span className="text-slate-200 font-mono text-xs mt-0.5 truncate max-w-full">{item.accountNumber}</span>
                           </div>
-                          <div className="flex flex-col items-center text-center">
+                          <div className="flex flex-col items-center text-center min-w-0">
                             <span className="text-xs text-slate-500">{t.accountHolder}</span>
-                            <span className="text-slate-200 font-medium mt-0.5">{item.accountHolder}</span>
+                            <span className="text-slate-200 font-medium mt-0.5 truncate max-w-full">{item.accountHolder}</span>
                           </div>
-                          {item.amount != null && (
-                            <div className="flex flex-col items-center text-center sm:col-span-2">
+                          {item.amount != null ? (
+                            <div className="flex flex-col items-center text-center min-w-0">
                               <span className="text-xs text-slate-500">{t.amount}</span>
                               <span className="text-slate-200 font-medium tabular-nums mt-0.5">{item.amount.toLocaleString(numFmt)}{currencySuffix}</span>
                             </div>
+                          ) : (
+                            <div className="flex flex-col items-center text-center min-w-0" />
                           )}
                         </div>
                       </li>
