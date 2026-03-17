@@ -376,9 +376,9 @@ export default function Home() {
         >
           {t.logout}
         </button>
-        <h1 className="text-3xl font-bold tracking-tight text-white">
+        <div className="text-xl font-semibold tracking-tight text-slate-100 bg-slate-800/50 border border-slate-600/60 rounded-xl px-5 py-2.5 shadow-sm">
           AXPAY
-        </h1>
+        </div>
         <button
           type="button"
           onClick={() => setHistoryOpen(true)}
@@ -769,17 +769,9 @@ export default function Home() {
     <div className="min-h-screen w-full bg-slate-950 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-slate-900/95 border-slate-800 ring-1 ring-slate-800 shadow-2xl">
         <CardHeader className="space-y-1.5 pb-6">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <img
-              src="https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_200,h_42,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png"
-              srcSet="https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_200,h_42,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png 1x, https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_274,h_58,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png 2x"
-              alt="BETEAST"
-              className="h-10 w-auto"
-            />
-            <CardTitle className="text-2xl font-semibold tracking-tight text-slate-50">
-              AXPAY {t.login}
-            </CardTitle>
-          </div>
+          <CardTitle className="text-2xl font-semibold tracking-tight text-slate-50 text-center">
+            AXPAY {t.login}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLoginSubmit} className="space-y-5">

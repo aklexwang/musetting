@@ -37,18 +37,25 @@ function getSignupSchema(t: {
   errUsernameMin: string;
   errPasswordRequired: string;
   errPasswordMin: string;
+  errPasswordMismatch: string;
   errBankRequired: string;
   errAccountNumberRequired: string;
   errAccountNumberRegex: string;
   errAccountHolderRequired: string;
 }) {
-  return z.object({
-    username: z.string().min(1, t.errUsernameRequired).min(2, t.errUsernameMin),
-    password: z.string().min(1, t.errPasswordRequired).min(6, t.errPasswordMin),
-    bankName: z.string().min(1, t.errBankRequired),
-    accountNumber: z.string().min(1, t.errAccountNumberRequired).regex(/^[0-9-]+$/, t.errAccountNumberRegex),
-    accountHolder: z.string().min(1, t.errAccountHolderRequired),
-  });
+  return z
+    .object({
+      username: z.string().min(1, t.errUsernameRequired).min(2, t.errUsernameMin),
+      password: z.string().min(1, t.errPasswordRequired).min(6, t.errPasswordMin),
+      passwordConfirm: z.string().min(1, t.errPasswordRequired),
+      bankName: z.string().min(1, t.errBankRequired),
+      accountNumber: z.string().min(1, t.errAccountNumberRequired).regex(/^[0-9-]+$/, t.errAccountNumberRegex),
+      accountHolder: z.string().min(1, t.errAccountHolderRequired),
+    })
+    .refine((data) => data.password === data.passwordConfirm, {
+      message: t.errPasswordMismatch,
+      path: ["passwordConfirm"],
+    });
 }
 
 type SignupFormValues = z.infer<ReturnType<typeof getSignupSchema>>;
@@ -68,6 +75,7 @@ export default function SignupPage() {
     defaultValues: {
       username: "",
       password: "",
+      passwordConfirm: "",
       bankName: "",
       accountNumber: "",
       accountHolder: "",
@@ -119,10 +127,11 @@ export default function SignupPage() {
   const onSubmit = async (data: SignupFormValues) => {
     setIsSubmitting(true);
     try {
+      const { passwordConfirm: _, ...payload } = data;
       const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
       const json = await res.json().catch(() => ({}));
 
@@ -133,6 +142,7 @@ export default function SignupPage() {
       reset({
         username: "",
         password: "",
+        passwordConfirm: "",
         bankName: "",
         accountNumber: "",
         accountHolder: "",
@@ -213,17 +223,9 @@ export default function SignupPage() {
     <div className="min-h-screen w-full bg-slate-950 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-slate-900/95 border-slate-800 ring-1 ring-slate-800 shadow-2xl shadow-black/30">
         <CardHeader className="space-y-1.5 pb-6">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <img
-              src="https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_200,h_42,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png"
-              srcSet="https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_200,h_42,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png 1x, https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_274,h_58,al_c,lg_1,q_85,enc_avif,quality_auto/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png 2x"
-              alt="BETEAST"
-              className="h-10 w-auto"
-            />
-            <CardTitle className="text-2xl font-semibold tracking-tight text-slate-50 font-[var(--font-geist-sans),system-ui,sans-serif]">
-              {t.title}
-            </CardTitle>
-          </div>
+          <CardTitle className="text-2xl font-semibold tracking-tight text-slate-50 font-[var(--font-geist-sans),system-ui,sans-serif] text-center">
+            {t.title}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form
@@ -281,6 +283,32 @@ export default function SignupPage() {
               {errors.password && (
                 <p className="text-red-500 text-xs mt-1">
                   {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="passwordConfirm" className="text-slate-200">
+                {t.passwordConfirm}
+              </Label>
+              <Controller
+                name="passwordConfirm"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="passwordConfirm"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder={t.passwordConfirmPlaceholder}
+                    className="bg-slate-800/50 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-slate-500"
+                    aria-invalid={!!errors.passwordConfirm}
+                    {...field}
+                  />
+                )}
+              />
+              {errors.passwordConfirm && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.passwordConfirm.message}
                 </p>
               )}
             </div>
