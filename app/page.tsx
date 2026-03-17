@@ -769,15 +769,10 @@ export default function Home() {
     <div className="min-h-screen w-full bg-slate-950 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-slate-900/95 border-slate-800 ring-1 ring-slate-800 shadow-2xl">
         <CardHeader className="space-y-1.5 pb-6">
-          <CardTitle
-            className="text-3xl font-bold tracking-tight text-white text-center"
-            style={{
-              textShadow:
-                "0 2px 4px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.08), 0 1px 0 rgba(255,255,255,0.15)",
-            }}
-          >
-            AXPAY LOGIN
-          </CardTitle>
+          <div className="flex flex-col items-center gap-2">
+            <img src="/axpay-logo.png" alt="AXPAY" className="h-10 w-auto max-w-full object-contain" />
+            <span className="text-2xl font-bold tracking-tight text-white">LOGIN</span>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLoginSubmit} className="space-y-5">
