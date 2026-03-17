@@ -376,11 +376,9 @@ export default function Home() {
         >
           {t.logout}
         </button>
-        <img
-          src="https://static.wixstatic.com/media/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png/v1/fill/w_200,h_42,al_c,lg_1,q_85/1b77f2_0566328b0df64e8a8d85c7ec47ed2aa1~mv2.png"
-          alt="BETEAST"
-          className="h-[42px] w-auto"
-        />
+        <h1 className="text-3xl font-bold tracking-tight text-white">
+          AXPAY
+        </h1>
         <button
           type="button"
           onClick={() => setHistoryOpen(true)}
