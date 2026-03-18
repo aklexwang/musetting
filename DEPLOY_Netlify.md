@@ -41,5 +41,19 @@ git push -u origin main
 
 - Netlify가 `npm install` → `npm run build` 실행 후 배포합니다.
 - 사이트 URL은 `https://랜덤이름.netlify.app` 형태로 부여됩니다.
-- 텔레그램 웹훅은 배포된 URL 기준으로 설정:  
-  `https://랜덤이름.netlify.app/api/telegram/webhook`
+
+## 4. 텔레그램 웹훅 등록 (필수 — 승인/거절 버튼 동작)
+
+봇에서 **승인**, **거절** 버튼을 눌렀을 때 반응하려면, 텔레그램에 웹훅 URL을 등록해야 합니다.  
+등록하지 않으면 버튼을 눌러도 서버로 요청이 가지 않아 아무 동작도 하지 않습니다.
+
+**로컬에서 한 번만 실행** (배포된 사이트 URL 사용):
+
+```bash
+cd C:\MUSETTING
+node scripts/set-telegram-webhook.mjs https://랜덤이름.netlify.app
+```
+
+- `TELEGRAM_BOT_TOKEN`은 로컬 `.env`에 있어야 합니다 (Netlify 쪽과 동일한 봇 토큰).
+- 웹훅으로 등록되는 주소: `https://랜덤이름.netlify.app/api/telegram/webhook`
+- 도메인을 바꾸거나 새로 배포했을 때마다 같은 명령으로 다시 실행하면 됩니다.

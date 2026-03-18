@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>본사 어드민</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      width: 100%;
+      background: #020617;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+    }
+    .bg-glow {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% -30%, rgba(56,189,248,0.06), transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    /* 왼쪽 사이드바 */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 14rem;
+      background: rgba(15, 23, 42, 0.95);
+      border-right: 1px solid rgba(51, 65, 85, 0.5);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .sidebar-header {
+      padding: 1.5rem 1rem;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    }
+    .sidebar-header h1 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      color: #fff;
+    }
+    .sidebar-header p {
+      margin-top: 0.25rem;
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+    nav {
+      flex: 1;
+      padding: 1rem 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    nav a {
+      display: block;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #94a3b8;
+      text-decoration: none;
+      border-radius: 0.5rem;
+      transition: all 0.2s;
+      text-align: left;
+    }
+    nav a:hover {
+      color: #e2e8f0;
+      background: rgba(51, 65, 85, 0.5);
+    }
+    nav a.active {
+      background: rgba(71, 85, 105, 0.6);
+      color: #fff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .sidebar-merchant-link {
+      display: block;
+      margin: 1rem 0.75rem;
+      padding: 0.75rem 1rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #38bdf8;
+      text-decoration: none;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      background: rgba(56, 189, 248, 0.1);
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .sidebar-merchant-link:hover {
+      background: rgba(56, 189, 248, 0.2);
+      color: #7dd3fc;
+      border-color: rgba(56, 189, 248, 0.6);
+    }
+    @media (max-width: 768px) {
+      .sidebar { width: 11rem; }
+      .main-wrap { margin-left: 11rem; }
+    }
+    /* 메인 콘텐츠 영역 */
+    .main-wrap {
+      position: relative;
+      flex: 1;
+      margin-left: 14rem;
+      min-height: 100vh;
+      z-index: 1;
+    }
+    .container {
+      position: relative;
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 2.5rem;
+      text-align: center;
+    }
+    header { margin-bottom: 2rem; text-align: center; }
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      color: #fff;
+    }
+    header p {
+      margin-top: 0.25rem;
+      font-size: 0.875rem;
+      color: #94a3b8;
+    }
+    .page { display: none; }
+    .page.is-active { display: block; }
+
+    /* Card */
+    .card {
+      border-radius: 1rem;
+      border: 1px solid rgba(51, 65, 85, 0.5);
+      background: rgba(15, 23, 42, 0.4);
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .card-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+      text-align: center;
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+    .card-desc {
+      font-size: 0.875rem;
+      color: #94a3b8;
+      margin-top: 0.25rem;
+    }
+
+    /* 현황판 - Stat cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    @media (min-width: 640px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1024px) { .stats-grid { grid-template-columns: repeat(5, 1fr); } }
+    .stat-card {
+      border-radius: 1rem;
+      padding: 1.5rem;
+      text-align: center;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.2s;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);
+    }
+    .stat-card:hover { transform: scale(1.02); }
+    .stat-card:active { transform: scale(0.99); }
+    .stat-card.amber { background: linear-gradient(to bottom right, rgba(245,158,11,0.9), rgba(234,88,12,0.9)); }
+    .stat-card.sky { background: linear-gradient(to bottom right, rgba(14,165,233,0.9), rgba(8,145,178,0.9)); }
+    .stat-card.green { background: linear-gradient(to bottom right, #15803d, #22c55e); }
+    .stat-card.violet { background: linear-gradient(to bottom right, #7c3aed, #8b5cf6); }
+    .stat-card.red { background: linear-gradient(to bottom right, #dc2626, #ec4899); }
+    .stat-num {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #fff;
+      margin-top: 0.5rem;
+    }
+    .stat-hint {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.7);
+      margin-top: 0.375rem;
+    }
+
+    /* 실시간 최근 활동 */
+    .activity-list { padding: 1.5rem; list-style: none; }
+    .activity-list li {
+      border-radius: 0.75rem;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(51, 65, 85, 0.4);
+      overflow: hidden;
+      margin-bottom: 0.75rem;
+    }
+    .activity-list li:last-child { margin-bottom: 0; }
+    .activity-top {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+    }
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.625rem;
+      border-radius: 0.375rem;
+    }
+    .badge-violet { background: rgba(139,92,246,0.2); color: #c4b5fd; }
+    .badge-pink { background: rgba(236,72,153,0.2); color: #f9a8d4; }
+    .badge-amber { background: rgba(245,158,11,0.2); color: #fcd34d; }
+    .badge-green { background: rgba(34,197,94,0.2); color: #86efac; }
+    .badge-slate { background: rgba(100,116,139,0.2); color: #cbd5e1; }
+    .activity-time { font-size: 0.75rem; color: #64748b; font-variant-numeric: tabular-nums; }
+    .activity-body {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem 1.5rem;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+    }
+    @media (min-width: 640px) { .activity-body { grid-template-columns: repeat(4, 1fr); } }
+    .activity-field { display: flex; flex-direction: column; align-items: center; text-align: center; }
+    .activity-field span:first-child { font-size: 0.75rem; color: #64748b; }
+    .activity-field .val { color: #e2e8f0; font-weight: 500; margin-top: 0.125rem; }
+    .activity-field .val.mono { font-family: ui-monospace, monospace; font-size: 0.75rem; }
+
+    /* 주요 지표 */
+    .indicators { padding: 1.25rem 1.5rem; }
+    .indicator-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .indicator-row:last-child { margin-bottom: 0; }
+    .indicator-label { font-size: 0.875rem; color: #94a3b8; width: 6rem; flex-shrink: 0; text-align: center; }
+    .indicator-bar {
+      flex: 1;
+      height: 0.75rem;
+      border-radius: 9999px;
+      background: #1e293b;
+      overflow: hidden;
+    }
+    .indicator-fill {
+      height: 100%;
+      border-radius: 9999px;
+      min-width: 4px;
+      transition: width 0.7s ease-out;
+    }
+    .indicator-fill.amber { background: #f59e0b; }
+    .indicator-fill.sky { background: #0ea5e9; }
+    .indicator-fill.green { background: #22c55e; }
+    .indicator-fill.violet { background: #8b5cf6; }
+    .indicator-fill.pink { background: #ec4899; }
+    .indicator-num { font-size: 0.875rem; color: #e2e8f0; font-family: ui-monospace; width: 2.5rem; text-align: center; }
+
+    /* Search input */
+    .search-wrap { margin-bottom: 1rem; text-align: center; }
+    .search-input {
+      width: 100%;
+      max-width: 20rem;
+      height: 2.5rem;
+      margin: 0 auto;
+      display: block;
+      padding: 0.25rem 0.625rem;
+      font-size: 0.875rem;
+      color: #e2e8f0;
+      text-align: center;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid #475569;
+      border-radius: 0.5rem;
+      outline: none;
+    }
+    .search-input::placeholder { color: #64748b; }
+    .search-input:focus { border-color: #64748b; box-shadow: 0 0 0 3px rgba(100,116,139,0.3); }
+
+    /* 상태 필터 - 헤더 옆 화살표 스타일 */
+    th.th-filter { vertical-align: middle; }
+    .filter-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.5rem;
+      position: relative;
+      border-radius: 0.375rem;
+    }
+    .filter-trigger .filter-label {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+    .filter-arrow-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.25rem;
+      background: rgba(71, 85, 105, 0.9);
+      border: none;
+      border-radius: 0.25rem;
+      color: #fff;
+      font-size: 0.6rem;
+      pointer-events: none;
+    }
+    .filter-trigger .filter-select {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      margin: 0;
+      padding: 0;
+      min-width: 0;
+    }
+    tr.filter-hidden { display: none; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      min-width: max-content;
+      font-size: 0.875rem;
+      border-collapse: collapse;
+      table-layout: auto;
+    }
+    th {
+      height: 2.5rem;
+      text-align: center;
+      padding: 1rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+      white-space: nowrap;
+    }
+    th.text-right { text-align: center; }
+    td {
+      padding: 1rem 0.75rem;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+      color: #94a3b8;
+      font-size: 0.875rem;
+      text-align: center;
+      white-space: nowrap;
+    }
+    tr:hover td { background: rgba(30, 41, 59, 0.4); }
+    tr:nth-child(even):not(:hover) td { background: rgba(30, 41, 59, 0.2); }
+    td.font-medium { color: #e2e8f0; font-weight: 500; }
+    td.tabular { font-variant-numeric: tabular-nums; }
+    td.text-right { text-align: center; }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.625rem;
+      border-radius: 0.375rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    .status-ok { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+    .status-no { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+    .status-wait { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+    .account-status-pending { cursor: pointer; }
+    .account-status-pending:hover { filter: brightness(1.1); }
+    #계좌변경 thead th { font-weight: 600; background: rgba(30, 41, 59, 0.2); color: #94a3b8; }
+    #계좌변경 thead .th-sub-placeholder { border: 0; background: rgba(30, 41, 59, 0.2); }
+    /* 1,2,3열(소속/아이디/신청일시), 10,11열: 색 없음 */
+    #계좌변경 thead tr:nth-child(2) th:nth-child(1), #계좌변경 thead tr:nth-child(2) th:nth-child(2), #계좌변경 thead tr:nth-child(2) th:nth-child(3),
+    #계좌변경 thead tr:nth-child(2) th:nth-child(10), #계좌변경 thead tr:nth-child(2) th:nth-child(11),
+    #계좌변경 tbody td:nth-child(1), #계좌변경 tbody td:nth-child(2), #계좌변경 tbody td:nth-child(3),
+    #계좌변경 tbody td:nth-child(10), #계좌변경 tbody td:nth-child(11) {
+      background-color: rgba(30, 41, 59, 0.2) !important; box-shadow: none !important;
+    }
+    /* 변경 전 계좌(4,5,6열): 연한 빨강 — 헤더·본문 동일 */
+    #계좌변경 thead tr:first-child th:nth-child(3) {
+      background-color: rgba(248, 113, 113, 0.2) !important; color: #fca5a5 !important;
+    }
+    #계좌변경 thead tr:nth-child(2) th:nth-child(4),
+    #계좌변경 thead tr:nth-child(2) th:nth-child(5),
+    #계좌변경 thead tr:nth-child(2) th:nth-child(6) {
+      background-color: rgba(248, 113, 113, 0.2) !important; color: #fca5a5 !important;
+    }
+    #계좌변경 tbody td:nth-child(4), #계좌변경 tbody td:nth-child(5), #계좌변경 tbody td:nth-child(6) {
+      background-color: rgba(248, 113, 113, 0.12) !important;
+    }
+    #계좌변경 tbody td:nth-child(4) { box-shadow: inset 1px 0 0 rgba(248, 113, 113, 0.25); }
+    #계좌변경 tbody tr:hover td:nth-child(4), #계좌변경 tbody tr:hover td:nth-child(5), #계좌변경 tbody tr:hover td:nth-child(6) {
+      background-color: rgba(248, 113, 113, 0.18) !important;
+    }
+    /* 변경 후 계좌(7,8,9열): 연한 초록 — 헤더·본문 동일 */
+    #계좌변경 thead tr:first-child th:nth-child(4) {
+      background-color: rgba(110, 231, 183, 0.2) !important; color: #6ee7b7 !important;
+    }
+    #계좌변경 thead tr:nth-child(2) th:nth-child(7),
+    #계좌변경 thead tr:nth-child(2) th:nth-child(8),
+    #계좌변경 thead tr:nth-child(2) th:nth-child(9) {
+      background-color: rgba(110, 231, 183, 0.2) !important; color: #6ee7b7 !important;
+    }
+    #계좌변경 tbody td:nth-child(7), #계좌변경 tbody td:nth-child(8), #계좌변경 tbody td:nth-child(9) {
+      background-color: rgba(110, 231, 183, 0.12) !important;
+    }
+    #계좌변경 tbody td:nth-child(7) { box-shadow: inset 1px 0 0 rgba(52, 211, 153, 0.25); }
+    #계좌변경 tbody tr:hover td:nth-child(7), #계좌변경 tbody tr:hover td:nth-child(8), #계좌변경 tbody tr:hover td:nth-child(9) {
+      background-color: rgba(110, 231, 183, 0.18) !important;
+    }
+    /* 한 화면에 맞춤, 스크롤 없이 */
+    #계좌변경 .card { overflow: visible; margin-bottom: 0; }
+    #계좌변경 .card-header { padding: 0.75rem 1rem; }
+    #계좌변경 .card-title { font-size: 0.9375rem; }
+    #계좌변경 .card-desc { font-size: 0.8125rem; margin-top: 0.125rem; }
+    #계좌변경 .table-wrap { overflow-x: auto; display: block; }
+    #계좌변경 table { table-layout: auto; width: 100%; min-width: max-content; font-size: 0.8125rem; }
+    #계좌변경 table col.col-account { min-width: 11rem; }
+    #계좌변경 th, #계좌변경 td {
+      white-space: nowrap; padding: 0.5rem 0.4rem;
+      overflow: visible; text-overflow: clip;
+    }
+    #계좌변경 th { height: auto; font-size: 0.7rem; }
+    .btn-stop {
+      height: 1.75rem; padding: 0 0.625rem; font-size: 0.8rem; font-weight: 500;
+      color: #f87171; background: rgba(239, 68, 68, 0.1); border: none; border-radius: 0.5rem; cursor: pointer;
+    }
+    .btn-stop:hover { background: rgba(239, 68, 68, 0.2); }
+    .btn-setting {
+      height: 1.75rem; padding: 0 0.625rem; font-size: 0.8rem; font-weight: 500;
+      color: #94a3b8; background: rgba(71, 85, 105, 0.3); border: 1px solid rgba(100, 116, 139, 0.5);
+      border-radius: 0.5rem; cursor: pointer; margin-left: 0.25rem;
+    }
+    .btn-setting:hover { background: rgba(71, 85, 105, 0.6); color: #e2e8f0; }
+    .btn-franchise-setting {
+      height: 1.75rem; padding: 0 0.625rem; font-size: 0.8rem; font-weight: 500;
+      color: #94a3b8; background: rgba(71, 85, 105, 0.3); border: 1px solid rgba(100, 116, 139, 0.5);
+      border-radius: 0.5rem; cursor: pointer; margin-left: 0.25rem;
+    }
+    .btn-franchise-setting:hover { background: rgba(71, 85, 105, 0.6); color: #e2e8f0; }
+    .btn-add {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #fff;
+      background: #2563eb;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+    }
+    .btn-add:hover { background: #3b82f6; }
+    th.th-add-row {
+      text-align: right;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    }
+    #franchiseName:disabled { opacity: 0.8; cursor: not-allowed; }
+    .btn-account-approve {
+      height: 1.75rem; padding: 0 0.625rem; font-size: 0.8rem; font-weight: 500; color: #fff;
+      background: rgba(59, 130, 246, 0.4); border: 1px solid rgba(96, 165, 250, 0.6);
+      border-radius: 0.5rem; cursor: pointer; margin-left: 0.25rem; box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+    }
+    .btn-account-approve:hover { background: #2563eb; box-shadow: 0 0 16px rgba(59, 130, 246, 0.7); }
+    .account-req-none { font-size: 0.8125rem; color: #64748b; }
+    .account-approval-body { text-align: center; }
+    .account-approval-question { margin-bottom: 0.75rem; font-weight: 500; }
+    .account-approval-compare { margin-bottom: 1rem; padding: 0.75rem 1rem; background: rgba(15, 23, 42, 0.6); border-radius: 8px; text-align: center; }
+    .account-approval-compare p { margin: 0.35rem 0; font-size: 0.875rem; }
+    .account-approval-compare p:first-child { margin-top: 0; }
+    .account-approval-compare p:last-child { margin-bottom: 0; }
+    .account-approval-label { font-weight: 600; margin-right: 0.35rem; }
+    .account-approval-prev { color: #fca5a5; }
+    .account-approval-prev .account-approval-label { color: #f87171; }
+    .account-approval-next { color: #6ee7b7; }
+    .account-approval-next .account-approval-label { color: #34d399; }
+    .account-approval-warn { color: #94a3b8; font-size: 0.8125rem; margin-top: 0; }
+    #accountApprovalModal .modal-header { justify-content: center; position: relative; }
+    #accountApprovalModal .modal-header .modal-close { position: absolute; right: 1rem; }
+
+    /* 모달 (공통) */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1rem;
+    }
+    .modal-overlay.is-open { display: flex; }
+    .modal {
+      width: 100%;
+      max-width: 400px;
+      background: #1e293b;
+      border-radius: 12px;
+      border: 1px solid #334155;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #334155;
+    }
+    .modal-title { font-size: 1rem; font-weight: 600; color: #fff; }
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 1.25rem;
+      cursor: pointer;
+      border-radius: 6px;
+      line-height: 1;
+    }
+    .modal-close:hover { background: #334155; color: #fff; }
+    .modal-body {
+      padding: 1.25rem 1.25rem 1rem;
+      color: #e2e8f0;
+      font-size: 0.875rem;
+    }
+    .modal-body .form-row {
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    .modal-body .form-row:last-child { margin-bottom: 0; }
+    .modal-body .form-label {
+      display: block;
+      font-size: 0.8125rem;
+      color: #94a3b8;
+      margin-bottom: 0.35rem;
+    }
+    .modal-body .form-input,
+    .modal-body .form-select {
+      width: 100%;
+      max-width: 280px;
+      margin: 0 auto;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      color: #e2e8f0;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid #334155;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .modal-body .form-select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.5rem center;
+      background-size: 1.25rem;
+      padding-right: 2rem;
+    }
+    .modal-body .form-input:focus,
+    .modal-body .form-select:focus {
+      outline: none;
+      border-color: #475569;
+    }
+    .modal-body .form-section {
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid #334155;
+    }
+    .modal-body .form-section-title {
+      font-size: 0.8125rem;
+      color: #94a3b8;
+      margin-bottom: 0.75rem;
+    }
+    .modal-body .form-textarea {
+      width: 100%;
+      max-width: 280px;
+      margin: 0 auto;
+      display: block;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      color: #e2e8f0;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid #334155;
+      border-radius: 6px;
+      resize: vertical;
+      min-height: 4rem;
+      font-family: inherit;
+    }
+    .modal-body .form-textarea::placeholder { color: #64748b; }
+    .modal-body .form-textarea:focus { outline: none; border-color: #475569; }
+    .modal-footer {
+      display: flex;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      background: rgba(15, 23, 42, 0.4);
+      border-top: 1px solid #334155;
+    }
+    .modal-footer .btn-modal-cancel {
+      flex: 1;
+      height: 2.75rem;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #334155;
+      color: #fff;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .modal-footer .btn-modal-cancel:hover { background: #475569; }
+    .modal-footer .btn-modal-save {
+      flex: 1;
+      height: 2.75rem;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .modal-footer .btn-modal-save:hover { background: #3b82f6; }
+  </style>
+</head>
+<body>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>본사 어드민</h1>
+      <p>Headquarters Admin</p>
+    </div>
+    <nav role="tablist">
+      <a href="#현황" class="active" data-tab="현황">현황판</a>
+      <a href="#가맹점리스트" data-tab="가맹점리스트">가맹점 리스트</a>
+      <a href="#목록" data-tab="목록">회원 목록</a>
+      <a href="#구매" data-tab="구매">구매</a>
+      <a href="#판매" data-tab="판매">판매</a>
+      <a href="#계좌변경" data-tab="계좌변경">계좌 변경</a>
+    </nav>
+    <a href="/admin" class="sidebar-merchant-link" title="가맹점 벳이스트 관리">가맹점 어드민 (벳이스트) →</a>
+  </aside>
+
+  <main class="main-wrap">
+    <div class="container">
+
+    <!-- 현황판 (최근 가맹점 활동 리스트는 제거) -->
+    <section id="현황" class="page is-active">
+      <div class="stats-grid">
+        <button type="button" class="stat-card amber">
+          <p class="stat-num">2</p>
+          <p class="stat-label">신규 가맹점</p>
+        </button>
+        <button type="button" class="stat-card sky">
+          <p class="stat-num">12</p>
+          <p class="stat-label">총 가맹점</p>
+        </button>
+        <button type="button" class="stat-card green">
+          <p class="stat-num">9</p>
+          <p class="stat-label">운영 중</p>
+        </button>
+        <button type="button" class="stat-card violet">
+          <p class="stat-num">1</p>
+          <p class="stat-label">이용정지</p>
+        </button>
+        <button type="button" class="stat-card red">
+          <p class="stat-num">156</p>
+          <p class="stat-label">오늘 거래</p>
+        </button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">가맹점별 주요 지표</div>
+          <div class="card-desc">하부 가맹점 지표 비교</div>
+        </div>
+        <div class="indicators">
+          <div class="indicator-row">
+            <span class="indicator-label">신규 가맹점</span>
+            <div class="indicator-bar"><div class="indicator-fill amber" style="width:16.7%"></div></div>
+            <span class="indicator-num">2</span>
+          </div>
+          <div class="indicator-row">
+            <span class="indicator-label">총 가맹점</span>
+            <div class="indicator-bar"><div class="indicator-fill sky" style="width:100%"></div></div>
+            <span class="indicator-num">12</span>
+          </div>
+          <div class="indicator-row">
+            <span class="indicator-label">운영 중</span>
+            <div class="indicator-bar"><div class="indicator-fill green" style="width:75%"></div></div>
+            <span class="indicator-num">9</span>
+          </div>
+          <div class="indicator-row">
+            <span class="indicator-label">이용정지</span>
+            <div class="indicator-bar"><div class="indicator-fill violet" style="width:8.3%"></div></div>
+            <span class="indicator-num">1</span>
+          </div>
+          <div class="indicator-row">
+            <span class="indicator-label">오늘 거래</span>
+            <div class="indicator-bar"><div class="indicator-fill pink" style="width:65%"></div></div>
+            <span class="indicator-num">156</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 가맹점 리스트 -->
+    <section id="가맹점리스트" class="page">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">가맹점 리스트</div>
+          <div class="card-desc">등록된 하부 가맹점 목록</div>
+          <div class="search-wrap" style="margin-top:1rem">
+            <input type="text" class="search-input" placeholder="가맹점명·연락처로 검색">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th colspan="6" class="th-add-row">
+                  <button type="button" class="btn-add" id="btnFranchiseAdd">가맹점 추가</button>
+                </th>
+              </tr>
+              <tr>
+                <th>가맹점명</th>
+                <th>연락처</th>
+                <th class="th-filter"><div class="filter-trigger"><span class="filter-label">상태</span><span class="filter-arrow-btn">▼</span><select class="filter-select status-filter"><option value="">전체</option><option value="정상">정상</option><option value="정지">정지</option></select></div></th>
+                <th>회원수</th>
+                <th>가입일</th>
+                <th class="text-right">수정</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-medium">강남 프리미엄</td>
+                <td class="tabular">@astet</td>
+                <td><span class="status status-ok">정상</span></td>
+                <td class="tabular">0</td>
+                <td class="tabular">2026. 03. 15.</td>
+                <td class="text-right"><button type="button" class="btn-franchise-setting">수정</button></td>
+              </tr>
+              <tr>
+                <td class="font-medium">서초 본점</td>
+                <td class="tabular">@biz_seocho</td>
+                <td><span class="status status-ok">정상</span></td>
+                <td class="tabular">48</td>
+                <td class="tabular">2026. 03. 10.</td>
+                <td class="text-right"><button type="button" class="btn-franchise-setting">수정</button></td>
+              </tr>
+              <tr>
+                <td class="font-medium">홍대 스토어</td>
+                <td class="tabular">@store_hongdae</td>
+                <td><span class="status status-ok">정상</span></td>
+                <td class="tabular">32</td>
+                <td class="tabular">2026. 03. 08.</td>
+                <td class="text-right"><button type="button" class="btn-franchise-setting">수정</button></td>
+              </tr>
+              <tr>
+                <td class="font-medium">잠실 지점</td>
+                <td class="tabular">@jam_sil</td>
+                <td><span class="status status-no">정지</span></td>
+                <td class="tabular">15</td>
+                <td class="tabular">2026. 03. 01.</td>
+                <td class="text-right"><button type="button" class="btn-franchise-setting">수정</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 가맹점 추가 모달 -->
+    <div class="modal-overlay" id="franchiseAddModal" role="dialog" aria-modal="true" aria-labelledby="franchiseAddModalTitle">
+      <div class="modal" style="max-width:420px">
+        <div class="modal-header">
+          <h2 class="modal-title" id="franchiseAddModalTitle">가맹점 추가</h2>
+          <button type="button" class="modal-close" id="franchiseAddModalClose" aria-label="닫기">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label class="form-label" for="addFranchiseName">가맹점명</label>
+            <input type="text" id="addFranchiseName" class="form-input" placeholder="가맹점명 입력" autocomplete="off">
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="addFranchisePw">비밀번호</label>
+            <input type="password" id="addFranchisePw" class="form-input" placeholder="비밀번호 입력" autocomplete="new-password">
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="addFranchiseContact">연락처</label>
+            <input type="text" id="addFranchiseContact" class="form-input" placeholder="@아이디 형식" autocomplete="off">
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="addFranchiseStatus">상태</label>
+            <select id="addFranchiseStatus" class="form-select">
+              <option value="정상">정상</option>
+              <option value="정지">정지</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="addFranchiseToken">토큰</label>
+            <input type="text" id="addFranchiseToken" class="form-input" placeholder="Token 입력" autocomplete="off">
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="addFranchiseMemberUrl">회원 URL</label>
+            <input type="text" id="addFranchiseMemberUrl" class="form-input" placeholder="회원 URL 입력" autocomplete="off">
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="addFranchiseRemark">비고</label>
+            <textarea id="addFranchiseRemark" class="form-input form-textarea" placeholder="비고 입력" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-cancel" id="franchiseAddModalCancel">취소</button>
+          <button type="button" class="btn-modal-save" id="franchiseAddModalSave">저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 가맹점 설정 모달 -->
+    <div class="modal-overlay" id="franchiseSettingModal" role="dialog" aria-modal="true" aria-labelledby="franchiseSettingModalTitle">
+      <div class="modal" style="max-width:420px">
+        <div class="modal-header">
+          <h2 class="modal-title" id="franchiseSettingModalTitle">가맹점 설정</h2>
+          <button type="button" class="modal-close" id="franchiseSettingModalClose" aria-label="닫기">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label class="form-label">가맹점명</label>
+            <input type="text" id="franchiseName" class="form-input" readonly disabled placeholder="-">
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="franchiseContact">연락처</label>
+            <input type="text" id="franchiseContact" class="form-input" placeholder="@아이디 형식" autocomplete="off">
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="franchiseStatus">상태</label>
+            <select id="franchiseStatus" class="form-select">
+              <option value="정상">정상</option>
+              <option value="정지">정지</option>
+            </select>
+          </div>
+          <div class="form-section">
+            <div class="form-section-title">비밀번호 변경</div>
+            <div class="form-row">
+              <label class="form-label" for="franchiseNewPw">새 비밀번호</label>
+              <input type="password" id="franchiseNewPw" class="form-input" placeholder="새 비밀번호" autocomplete="new-password">
+            </div>
+            <div class="form-row">
+              <label class="form-label" for="franchiseNewPwConfirm">비밀번호 확인</label>
+              <input type="password" id="franchiseNewPwConfirm" class="form-input" placeholder="비밀번호 확인" autocomplete="new-password">
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="franchiseToken">Token</label>
+            <input type="text" id="franchiseToken" class="form-input" placeholder="Token 입력" autocomplete="off">
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="franchiseMemberUrl">회원 URL</label>
+            <input type="text" id="franchiseMemberUrl" class="form-input" placeholder="회원 URL 입력" autocomplete="off">
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="franchiseRemark">비고</label>
+            <textarea id="franchiseRemark" class="form-input form-textarea" placeholder="비고 입력" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-cancel" id="franchiseSettingModalCancel">취소</button>
+          <button type="button" class="btn-modal-save" id="franchiseSettingModalSave">저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 회원 목록 -->
+    <section id="목록" class="page">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">회원 목록</div>
+          <div class="card-desc">전체 가맹점 소속 회원 (총 어드민)</div>
+          <div class="search-wrap" style="margin-top:1rem; display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center;">
+            <input type="text" class="search-input franchise-search" placeholder="가맹점 검색" style="max-width:12rem">
+            <input type="text" class="search-input" placeholder="아이디·예금주·은행명으로 검색">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>소속 가맹점</th>
+                <th>아이디</th>
+                <th>은행</th>
+                <th>계좌번호</th>
+                <th>예금주</th>
+                <th class="th-filter"><div class="filter-trigger"><span class="filter-label">가입상태</span><span class="filter-arrow-btn">▼</span><select class="filter-select status-filter"><option value="">전체</option><option value="대기">대기</option><option value="승인">승인</option><option value="거절">거절</option></select></div></th>
+                <th class="th-filter"><div class="filter-trigger"><span class="filter-label">상태</span><span class="filter-arrow-btn">▼</span><select class="filter-select status-filter"><option value="">전체</option><option value="정상">정상</option><option value="이용정지">이용정지</option></select></div></th>
+                <th>가입일</th>
+                <th class="text-right th-filter"><div class="filter-trigger"><span class="filter-label">정지</span><span class="filter-arrow-btn">▼</span><select class="filter-select status-filter" data-filter-col="6"><option value="">전체</option><option value="정상">정상</option><option value="이용정지">이용정지</option></select></div></th>
+                <th class="text-right">설정</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>서초 본점</td>
+                <td class="font-medium">test666</td>
+                <td>국민은행</td>
+                <td class="tabular">090909090909</td>
+                <td>111</td>
+                <td><span class="status status-ok">승인</span></td>
+                <td><span class="use-status">정상</span></td>
+                <td class="tabular">2026. 03. 14.</td>
+                <td class="text-right"><button type="button" class="btn-stop">정지</button></td>
+                <td class="text-right"><button type="button" class="btn-setting">설정</button></td>
+              </tr>
+              <tr>
+                <td>강남 프리미엄</td>
+                <td class="font-medium">111111</td>
+                <td>농협은행</td>
+                <td class="tabular">11</td>
+                <td>11</td>
+                <td><span class="status status-ok">승인</span></td>
+                <td><span class="use-status">정상</span></td>
+                <td class="tabular">2026. 03. 14.</td>
+                <td class="text-right"><button type="button" class="btn-stop">정지</button></td>
+                <td class="text-right"><button type="button" class="btn-setting">설정</button></td>
+              </tr>
+              <tr>
+                <td>홍대 스토어</td>
+                <td class="font-medium">GGGGGG</td>
+                <td>우체국</td>
+                <td class="tabular">6545645645</td>
+                <td>지디옹</td>
+                <td><span class="status status-no">거절</span></td>
+                <td><span class="use-status">이용정지</span></td>
+                <td class="tabular">2026. 03. 14.</td>
+                <td class="text-right"><button type="button" class="btn-stop">정지</button></td>
+                <td class="text-right"><button type="button" class="btn-setting">설정</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 설정 모달 -->
+    <div class="modal-overlay" id="settingModal" role="dialog" aria-modal="true" aria-labelledby="settingModalTitle">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 class="modal-title" id="settingModalTitle">회원 설정</h2>
+          <button type="button" class="modal-close" id="settingModalClose" aria-label="닫기">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label class="form-label" for="settingStatus">가입 상태</label>
+            <select id="settingStatus" class="form-select">
+              <option value="대기">대기</option>
+              <option value="승인">승인</option>
+              <option value="거절">거절</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="settingUseStatus">상태</label>
+            <select id="settingUseStatus" class="form-select">
+              <option value="정상">정상</option>
+              <option value="이용정지">이용정지</option>
+            </select>
+          </div>
+          <div class="form-section">
+            <div class="form-section-title">계좌번호 변경</div>
+            <div class="form-row">
+              <label class="form-label" for="settingBank">은행명</label>
+              <input type="text" id="settingBank" class="form-input" placeholder="은행명" autocomplete="off">
+            </div>
+            <div class="form-row">
+              <label class="form-label" for="settingAccount">계좌번호</label>
+              <input type="text" id="settingAccount" class="form-input" placeholder="계좌번호" inputmode="numeric" autocomplete="off">
+            </div>
+            <div class="form-row">
+              <label class="form-label" for="settingHolder">예금주</label>
+              <input type="text" id="settingHolder" class="form-input" placeholder="예금주" autocomplete="off">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-cancel" id="settingModalCancel">취소</button>
+          <button type="button" class="btn-modal-save" id="settingModalSave">저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 계좌 변경 승인 확인 모달 -->
+    <div class="modal-overlay" id="accountApprovalModal" role="dialog" aria-modal="true" aria-labelledby="accountApprovalModalTitle">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 class="modal-title" id="accountApprovalModalTitle">승인</h2>
+          <button type="button" class="modal-close" id="accountApprovalModalClose" aria-label="닫기">×</button>
+        </div>
+        <div class="modal-body account-approval-body">
+          <p class="account-approval-question">승인 하시겠습니까?</p>
+          <div class="account-approval-compare">
+            <p class="account-approval-prev"><span class="account-approval-label">변경전</span> <span id="accountApprovalPrevText">-</span></p>
+            <p class="account-approval-next"><span class="account-approval-label">변경후</span> <span id="accountApprovalNextText">-</span></p>
+          </div>
+          <p class="account-approval-warn">한번 승인한 데이터는 복구가 불가능 합니다.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-cancel" id="accountApprovalModalCancel">취소</button>
+          <button type="button" class="btn-modal-save" id="accountApprovalModalConfirm">확인</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 구매 -->
+    <section id="구매" class="page">
+      <div class="search-wrap" style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center;">
+        <input type="text" class="search-input franchise-search" placeholder="가맹점 검색" style="max-width:12rem">
+        <input type="text" class="search-input" placeholder="아이디로 검색">
+      </div>
+      <div class="card" style="border-color:rgba(51,65,85,0.6);background:rgba(15,23,42,0.5);">
+        <div class="card-header">
+          <div class="card-title">구매 신청 내역</div>
+          <div class="card-desc">전체 가맹점 구매 내역 (총 어드민)</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>소속 가맹점</th>
+                <th>아이디</th>
+                <th>금액</th>
+                <th class="th-filter"><div class="filter-trigger"><span class="filter-label">상태</span><span class="filter-arrow-btn">▼</span><select class="filter-select status-filter"><option value="">전체</option><option value="승인">승인</option><option value="거절">거절</option></select></div></th>
+                <th>신청일시</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>서초 본점</td>
+                <td class="font-medium">qqqqqq</td>
+                <td style="font-family:ui-monospace">90,000원</td>
+                <td><span class="status status-ok">승인</span></td>
+                <td class="tabular">03. 14. 오후 09:56</td>
+              </tr>
+              <tr>
+                <td>강남 프리미엄</td>
+                <td class="font-medium">111111</td>
+                <td style="font-family:ui-monospace">100,000원</td>
+                <td><span class="status status-ok">승인</span></td>
+                <td class="tabular">03. 14. 오후 08:01</td>
+              </tr>
+              <tr>
+                <td>홍대 스토어</td>
+                <td class="font-medium">HHHHHH</td>
+                <td style="font-family:ui-monospace">10,000원</td>
+                <td><span class="status status-no">거절</span></td>
+                <td class="tabular">03. 14. 오후 06:34</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 판매 -->
+    <section id="판매" class="page">
+      <div class="search-wrap" style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center;">
+        <input type="text" class="search-input franchise-search" placeholder="가맹점 검색" style="max-width:12rem">
+        <input type="text" class="search-input" placeholder="아이디로 검색">
+      </div>
+      <div class="card" style="border-color:rgba(51,65,85,0.6);background:rgba(15,23,42,0.5);">
+        <div class="card-header">
+          <div class="card-title">판매 신청 내역</div>
+          <div class="card-desc">전체 가맹점 판매 내역 (총 어드민)</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>소속 가맹점</th>
+                <th>아이디</th>
+                <th>금액</th>
+                <th class="th-filter"><div class="filter-trigger"><span class="filter-label">상태</span><span class="filter-arrow-btn">▼</span><select class="filter-select status-filter"><option value="">전체</option><option value="승인">승인</option><option value="거절">거절</option></select></div></th>
+                <th>신청일시</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>서초 본점</td>
+                <td class="font-medium">qqqqqq</td>
+                <td style="font-family:ui-monospace">80,000원</td>
+                <td><span class="status status-ok">승인</span></td>
+                <td class="tabular">03. 14. 오후 09:31</td>
+              </tr>
+              <tr>
+                <td>홍대 스토어</td>
+                <td class="font-medium">HHHHHH</td>
+                <td style="font-family:ui-monospace">10,000원</td>
+                <td><span class="status status-no">거절</span></td>
+                <td class="tabular">03. 14. 오후 06:08</td>
+              </tr>
+              <tr>
+                <td>잠실 지점</td>
+                <td class="font-medium">DDDDDD</td>
+                <td style="font-family:ui-monospace">10,000원</td>
+                <td><span class="status status-ok">승인</span></td>
+                <td class="tabular">03. 14. 오후 05:54</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 계좌 변경 -->
+    <section id="계좌변경" class="page">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">계좌 변경</div>
+          <div class="card-desc">전체 가맹점 회원 계좌 변경 신청 및 처리 내역 (총 어드민)</div>
+          <div class="search-wrap" style="margin-top:0.75rem">
+            <input type="text" class="search-input franchise-search" placeholder="가맹점 검색" style="max-width:12rem">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <colgroup>
+              <col><col><col>
+              <col><col><col class="col-account">
+              <col><col><col class="col-account">
+              <col><col>
+            </colgroup>
+            <thead>
+              <tr>
+                <th class="th-sub-placeholder"></th>
+                <th colspan="2" class="th-sub-placeholder"></th>
+                <th colspan="3">변경 전 계좌</th>
+                <th colspan="3">변경 후 계좌</th>
+                <th colspan="2" class="th-sub-placeholder"></th>
+              </tr>
+              <tr>
+                <th>소속 가맹점</th>
+                <th>아이디</th>
+                <th>신청 일시</th>
+                <th>이름</th>
+                <th>은행명</th>
+                <th>계좌번호</th>
+                <th>이름</th>
+                <th>은행명</th>
+                <th>계좌번호</th>
+                <th>변경 일시</th>
+                <th class="th-filter"><div class="filter-trigger"><span class="filter-label">상태</span><span class="filter-arrow-btn">▼</span><select class="filter-select status-filter"><option value="">전체</option><option value="완료">완료</option><option value="대기">대기</option><option value="거부">거부</option></select></div></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>강남 프리미엄</td>
+                <td class="font-medium">111111</td>
+                <td class="tabular">03. 14. 10:30</td>
+                <td>홍길동</td>
+                <td>농협은행</td>
+                <td>110-234-567890</td>
+                <td>김일성</td>
+                <td>카카오증권</td>
+                <td>3333-06-2211123</td>
+                <td class="tabular">03. 14. 11:00</td>
+                <td><span class="status status-ok">완료</span></td>
+              </tr>
+              <tr>
+                <td>서초 본점</td>
+                <td class="font-medium">test666</td>
+                <td class="tabular">03. 14. 09:15</td>
+                <td>김민수</td>
+                <td>국민은행</td>
+                <td>090-9090-9090-09</td>
+                <td>홍길동</td>
+                <td>신한은행</td>
+                <td>110-1234-567890</td>
+                <td class="tabular">-</td>
+                <td><span class="status status-wait account-status-pending" role="button" tabindex="0">대기</span></td>
+              </tr>
+              <tr>
+                <td>홍대 스토어</td>
+                <td class="font-medium">GGGGGG</td>
+                <td class="tabular">03. 14. 08:50</td>
+                <td>지동엽</td>
+                <td>우체국</td>
+                <td>6545-645-6450</td>
+                <td>김철수</td>
+                <td>기업은행</td>
+                <td>123-4567-890123</td>
+                <td class="tabular">-</td>
+                <td><span class="status status-no">거부</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    </div>
+  </main>
+
+  <script>
+    (function() {
+      var navLinks = document.querySelectorAll('nav a[data-tab]');
+      var pages = document.querySelectorAll('.page');
+
+      function getHash() {
+        try {
+          return decodeURIComponent(location.hash.slice(1)) || '현황';
+        } catch (_) {
+          return '현황';
+        }
+      }
+      function showPage(id) {
+        var hash = (id != null && id !== '') ? id : getHash();
+        pages.forEach(function(p) {
+          p.classList.toggle('is-active', p.id === hash);
+        });
+        navLinks.forEach(function(a) {
+          a.classList.toggle('active', a.getAttribute('data-tab') === hash);
+        });
+      }
+
+      navLinks.forEach(function(a) {
+        a.addEventListener('click', function(e) {
+          e.preventDefault();
+          var tab = this.getAttribute('data-tab');
+          showPage(tab);
+          location.hash = tab;
+        });
+      });
+      window.addEventListener('hashchange', function() { showPage(); });
+      showPage();
+
+      // 상태/헤더 필터 (테이블 헤더, 여러 개 적용) + 가맹점 검색
+      function applyTableFilters(table) {
+        if (!table) return;
+        var thead = table.querySelector('thead');
+        var tbody = table.querySelector('tbody');
+        if (!thead || !tbody) return;
+        var section = table.closest('section.page');
+        var franchiseInput = section ? section.querySelector('.franchise-search') : null;
+        var franchiseVal = (franchiseInput && franchiseInput.value) ? franchiseInput.value.trim().toLowerCase() : '';
+        var selects = thead.querySelectorAll('select.status-filter');
+        var filters = [];
+        selects.forEach(function(sel) {
+          var th = sel.closest('th');
+          if (!th) return;
+          var colIndex = sel.getAttribute('data-filter-col');
+          if (colIndex !== null && colIndex !== '') {
+            filters.push({ col: parseInt(colIndex, 10), value: (sel.value || '').trim() });
+          } else {
+            var headerRow = th.parentElement;
+            var headers = headerRow.querySelectorAll('th');
+            for (var i = 0; i < headers.length; i++) {
+              if (headers[i] === th) {
+                filters.push({ col: i, value: (sel.value || '').trim() });
+                break;
+              }
+            }
+          }
+        });
+        var rows = tbody.querySelectorAll('tr');
+        rows.forEach(function(tr) {
+          var show = true;
+          if (franchiseVal) {
+            var cell0 = tr.querySelectorAll('td')[0];
+            var cell0Text = cell0 ? cell0.textContent.trim().toLowerCase() : '';
+            if (cell0Text.indexOf(franchiseVal) === -1) show = false;
+          }
+          if (show) {
+            for (var f = 0; f < filters.length; f++) {
+              if (filters[f].value === '') continue;
+              var cell = tr.querySelectorAll('td')[filters[f].col];
+              var cellText = cell ? cell.textContent.trim() : '';
+              if (cellText !== filters[f].value) {
+                show = false;
+                break;
+              }
+            }
+          }
+          if (show) tr.classList.remove('filter-hidden');
+          else tr.classList.add('filter-hidden');
+        });
+      }
+      function onStatusFilterChange() {
+        var table = this.closest('table');
+        applyTableFilters(table);
+      }
+      document.querySelectorAll('.status-filter').forEach(function(selectEl) {
+        selectEl.addEventListener('change', onStatusFilterChange);
+      });
+      document.querySelectorAll('.franchise-search').forEach(function(inp) {
+        inp.addEventListener('input', function() {
+          var section = this.closest('section.page');
+          var table = section ? section.querySelector('table') : null;
+          if (table) applyTableFilters(table);
+        });
+      });
+
+      // 설정 모달 (회원 목록)
+      var settingModal = document.getElementById('settingModal');
+      var settingStatus = document.getElementById('settingStatus');
+      var settingUseStatus = document.getElementById('settingUseStatus');
+      var settingBank = document.getElementById('settingBank');
+      var settingAccount = document.getElementById('settingAccount');
+      var settingHolder = document.getElementById('settingHolder');
+      var currentSettingRow = null;
+
+      function openSettingModal(row) {
+        var cells = row.querySelectorAll('td');
+        var bank = cells[2] ? cells[2].textContent.trim() : '';
+        var account = cells[3] ? cells[3].textContent.trim() : '';
+        var holder = cells[4] ? cells[4].textContent.trim() : '';
+        var statusSpan = row.querySelector('.status');
+        var statusText = statusSpan ? statusSpan.textContent.trim() : '대기';
+        settingStatus.value = statusText === '승인' ? '승인' : statusText === '거절' ? '거절' : '대기';
+        var useStatusSpan = row.querySelector('.use-status');
+        var useStatusText = useStatusSpan ? useStatusSpan.textContent.trim() : '정상';
+        settingUseStatus.value = useStatusText === '이용정지' ? '이용정지' : '정상';
+        settingBank.value = bank;
+        settingAccount.value = account;
+        settingHolder.value = holder;
+        currentSettingRow = row;
+        settingModal.classList.add('is-open');
+      }
+      function closeSettingModal() {
+        settingModal.classList.remove('is-open');
+        currentSettingRow = null;
+      }
+      function getStatusClass(val) {
+        if (val === '승인') return 'status status-ok';
+        if (val === '거절') return 'status status-no';
+        return 'status status-wait';
+      }
+      document.querySelectorAll('.btn-setting').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var row = this.closest('tr');
+          if (row) openSettingModal(row);
+        });
+      });
+      document.getElementById('settingModalClose').addEventListener('click', closeSettingModal);
+      document.getElementById('settingModalCancel').addEventListener('click', closeSettingModal);
+      document.getElementById('settingModalSave').addEventListener('click', function() {
+        if (!currentSettingRow) { closeSettingModal(); return; }
+        var cells = currentSettingRow.querySelectorAll('td');
+        var statusVal = settingStatus.value;
+        var useStatusVal = settingUseStatus.value;
+        if (cells[2]) cells[2].textContent = settingBank.value.trim() || cells[2].textContent;
+        if (cells[3]) cells[3].textContent = settingAccount.value.trim() || cells[3].textContent;
+        if (cells[4]) cells[4].textContent = settingHolder.value.trim() || cells[4].textContent;
+        var statusSpan = currentSettingRow.querySelector('.status');
+        if (statusSpan) {
+          statusSpan.className = getStatusClass(statusVal);
+          statusSpan.textContent = statusVal;
+        }
+        var useStatusSpan = currentSettingRow.querySelector('.use-status');
+        if (useStatusSpan) useStatusSpan.textContent = useStatusVal;
+        closeSettingModal();
+      });
+      settingModal.addEventListener('click', function(e) {
+        if (e.target === settingModal) closeSettingModal();
+      });
+
+      // 가맹점 추가 모달
+      var franchiseAddModal = document.getElementById('franchiseAddModal');
+      var addFranchiseName = document.getElementById('addFranchiseName');
+      var addFranchisePw = document.getElementById('addFranchisePw');
+      var addFranchiseContact = document.getElementById('addFranchiseContact');
+      var addFranchiseStatus = document.getElementById('addFranchiseStatus');
+      var addFranchiseToken = document.getElementById('addFranchiseToken');
+      var addFranchiseMemberUrl = document.getElementById('addFranchiseMemberUrl');
+      var addFranchiseRemark = document.getElementById('addFranchiseRemark');
+      var franchiseListTbody = document.querySelector('#가맹점리스트 tbody');
+
+      function openFranchiseAddModal() {
+        addFranchiseName.value = '';
+        addFranchisePw.value = '';
+        addFranchiseContact.value = '';
+        addFranchiseStatus.value = '정상';
+        addFranchiseToken.value = '';
+        addFranchiseMemberUrl.value = '';
+        addFranchiseRemark.value = '';
+        franchiseAddModal.classList.add('is-open');
+      }
+      function closeFranchiseAddModal() {
+        franchiseAddModal.classList.remove('is-open');
+      }
+      document.getElementById('btnFranchiseAdd').addEventListener('click', openFranchiseAddModal);
+      document.getElementById('franchiseAddModalClose').addEventListener('click', closeFranchiseAddModal);
+      document.getElementById('franchiseAddModalCancel').addEventListener('click', closeFranchiseAddModal);
+      document.getElementById('franchiseAddModalSave').addEventListener('click', function() {
+        var name = addFranchiseName.value.trim();
+        var contact = addFranchiseContact.value.trim();
+        var statusVal = addFranchiseStatus.value;
+        if (!name) { alert('가맹점명을 입력해 주세요.'); return; }
+        if (!franchiseListTbody) return;
+        var today = new Date();
+        var dateStr = today.getFullYear() + '. ' + String(today.getMonth() + 1).padStart(2, '0') + '. ' + String(today.getDate()).padStart(2, '0') + '.';
+        var statusClass = statusVal === '정지' ? 'status status-no' : 'status status-ok';
+        var tr = document.createElement('tr');
+        tr.dataset.franchiseToken = addFranchiseToken.value.trim();
+        tr.dataset.franchiseMemberUrl = addFranchiseMemberUrl.value.trim();
+        tr.dataset.franchiseRemark = addFranchiseRemark.value.trim();
+        tr.innerHTML = '<td class="font-medium">' + escapeHtml(name) + '</td><td class="tabular">' + escapeHtml(contact || '-') + '</td><td><span class="status ' + statusClass + '">' + escapeHtml(statusVal) + '</span></td><td class="tabular">0</td><td class="tabular">' + dateStr + '</td><td class="text-right"><button type="button" class="btn-franchise-setting">수정</button></td>';
+        franchiseListTbody.appendChild(tr);
+        var newBtn = tr.querySelector('.btn-franchise-setting');
+        if (newBtn) {
+          newBtn.addEventListener('click', function() {
+            var row = this.closest('tr');
+            if (row) openFranchiseSettingModal(row);
+          });
+        }
+        closeFranchiseAddModal();
+      });
+      franchiseAddModal.addEventListener('click', function(e) {
+        if (e.target === franchiseAddModal) closeFranchiseAddModal();
+      });
+      function escapeHtml(str) {
+        if (!str) return '';
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      // 가맹점 설정 모달 (가맹점 리스트)
+      var franchiseSettingModal = document.getElementById('franchiseSettingModal');
+      var franchiseName = document.getElementById('franchiseName');
+      var franchiseContact = document.getElementById('franchiseContact');
+      var franchiseStatus = document.getElementById('franchiseStatus');
+      var franchiseNewPw = document.getElementById('franchiseNewPw');
+      var franchiseNewPwConfirm = document.getElementById('franchiseNewPwConfirm');
+      var franchiseToken = document.getElementById('franchiseToken');
+      var franchiseMemberUrl = document.getElementById('franchiseMemberUrl');
+      var franchiseRemark = document.getElementById('franchiseRemark');
+      var currentFranchiseRow = null;
+
+      function openFranchiseSettingModal(row) {
+        var cells = row.querySelectorAll('td');
+        var name = cells[0] ? cells[0].textContent.trim() : '';
+        var contact = cells[1] ? cells[1].textContent.trim() : '';
+        var statusSpan = row.querySelector('.status');
+        var statusText = statusSpan ? statusSpan.textContent.trim() : '정상';
+        franchiseName.value = name;
+        franchiseContact.value = contact;
+        franchiseStatus.value = statusText === '정지' ? '정지' : '정상';
+        franchiseToken.value = row.dataset.franchiseToken || '';
+        franchiseMemberUrl.value = row.dataset.franchiseMemberUrl || '';
+        franchiseRemark.value = row.dataset.franchiseRemark || '';
+        franchiseNewPw.value = '';
+        franchiseNewPwConfirm.value = '';
+        currentFranchiseRow = row;
+        franchiseSettingModal.classList.add('is-open');
+      }
+      function closeFranchiseSettingModal() {
+        franchiseSettingModal.classList.remove('is-open');
+        currentFranchiseRow = null;
+      }
+      document.querySelectorAll('.btn-franchise-setting').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var row = this.closest('tr');
+          if (row) openFranchiseSettingModal(row);
+        });
+      });
+      document.getElementById('franchiseSettingModalClose').addEventListener('click', closeFranchiseSettingModal);
+      document.getElementById('franchiseSettingModalCancel').addEventListener('click', closeFranchiseSettingModal);
+      document.getElementById('franchiseSettingModalSave').addEventListener('click', function() {
+        if (!currentFranchiseRow) { closeFranchiseSettingModal(); return; }
+        var cells = currentFranchiseRow.querySelectorAll('td');
+        if (cells[1]) cells[1].textContent = franchiseContact.value.trim() || cells[1].textContent;
+        var statusSpan = currentFranchiseRow.querySelector('.status');
+        if (statusSpan) {
+          var statusVal = franchiseStatus.value;
+          statusSpan.className = statusVal === '정지' ? 'status status-no' : 'status status-ok';
+          statusSpan.textContent = statusVal;
+        }
+        currentFranchiseRow.dataset.franchiseToken = franchiseToken.value.trim();
+        currentFranchiseRow.dataset.franchiseMemberUrl = franchiseMemberUrl.value.trim();
+        currentFranchiseRow.dataset.franchiseRemark = franchiseRemark.value.trim();
+        closeFranchiseSettingModal();
+      });
+      franchiseSettingModal.addEventListener('click', function(e) {
+        if (e.target === franchiseSettingModal) closeFranchiseSettingModal();
+      });
+
+      // 계좌 변경 - 대기 클릭 시 승인 확인 모달
+      var accountApprovalModal = document.getElementById('accountApprovalModal');
+      var accountApprovalModalClose = document.getElementById('accountApprovalModalClose');
+      var accountApprovalModalCancel = document.getElementById('accountApprovalModalCancel');
+      var accountApprovalModalConfirm = document.getElementById('accountApprovalModalConfirm');
+      var currentApprovalSpan = null;
+
+      function openAccountApprovalModal(span) {
+        currentApprovalSpan = span;
+        var row = span.closest('tr');
+        var prevEl = document.getElementById('accountApprovalPrevText');
+        var nextEl = document.getElementById('accountApprovalNextText');
+        if (row && prevEl && nextEl) {
+          var cells = row.querySelectorAll('td');
+          var prevName = cells[3] ? cells[3].textContent.trim() : '';
+          var prevBank = cells[4] ? cells[4].textContent.trim() : '';
+          var prevNum = cells[5] ? cells[5].textContent.trim() : '';
+          var nextName = cells[6] ? cells[6].textContent.trim() : '';
+          var nextBank = cells[7] ? cells[7].textContent.trim() : '';
+          var nextNum = cells[8] ? cells[8].textContent.trim() : '';
+          prevEl.textContent = [prevName, prevBank, prevNum].filter(Boolean).join(' / ') || '-';
+          nextEl.textContent = [nextName, nextBank, nextNum].filter(Boolean).join(' / ') || '-';
+        }
+        accountApprovalModal.classList.add('is-open');
+      }
+      function closeAccountApprovalModal() {
+        accountApprovalModal.classList.remove('is-open');
+        currentApprovalSpan = null;
+      }
+      document.querySelectorAll('.account-status-pending').forEach(function(span) {
+        span.addEventListener('click', function() { openAccountApprovalModal(this); });
+        span.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAccountApprovalModal(this); }
+        });
+      });
+      accountApprovalModalClose.addEventListener('click', closeAccountApprovalModal);
+      accountApprovalModalCancel.addEventListener('click', closeAccountApprovalModal);
+      accountApprovalModalConfirm.addEventListener('click', function() {
+        if (currentApprovalSpan) {
+          var row = currentApprovalSpan.closest('tr');
+          var cells = row ? row.querySelectorAll('td') : [];
+          if (cells[9]) {
+            var d = new Date();
+            var m = String(d.getMonth() + 1).padStart(2, '0');
+            var day = String(d.getDate()).padStart(2, '0');
+            var h = String(d.getHours()).padStart(2, '0');
+            var min = String(d.getMinutes()).padStart(2, '0');
+            cells[9].textContent = m + '. ' + day + '. ' + h + ':' + min;
+          }
+          currentApprovalSpan.textContent = '완료';
+          currentApprovalSpan.className = 'status status-ok';
+          currentApprovalSpan.removeAttribute('role');
+          currentApprovalSpan.removeAttribute('tabindex');
+          currentApprovalSpan.classList.remove('account-status-pending');
+        }
+        closeAccountApprovalModal();
+      });
+      accountApprovalModal.addEventListener('click', function(e) {
+        if (e.target === accountApprovalModal) closeAccountApprovalModal();
+      });
+    })();
+  </script>
+</body>
+</html>

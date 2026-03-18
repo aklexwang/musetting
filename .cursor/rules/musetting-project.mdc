@@ -1,0 +1,86 @@
+---
+description: MUSETTING 프로젝트 전체 컨텍스트 및 AxPay API 가이드 (Rev 12.10) 요약. 새 채팅에서도 이 규칙을 참고하여 동일한 맥락으로 작업한다.
+globs: 
+alwaysApply: true
+---
+
+# MUSETTING 프로젝트 컨텍스트
+
+## 1. 프로젝트 개요
+- **이름**: MUSETTING (가맹점 "벳이스트" 전용)
+- **스택**: Next.js 14 (App Router), TailwindCSS, Shadcn UI, Prisma, PostgreSQL (Neon), Telegram Bot, Netlify 배포, AxPay 연동
+- **인증**: bcrypt + 쿠키 세션 (`AUTH_SECRET`), `getSession()` 사용. API 호출 시 `credentials: "include"` 필수.
+- **저장소**: GitHub `aklexwang/musetting`, Netlify 사이트 예: `papaya-sorbet-3708f7.netlify.app`
+
+## 2. 환경 변수 (.env / Netlify)
+- `AUTH_SECRET`: 세션 암호화
+- `DATABASE_URL`: PostgreSQL (Neon)
+- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID`: 텔레그램 봇 및 관리자 채팅방 (예: -1003625185494)
+- `AXPAY_TOKEN`, `AXPAY_BASE_URL`: AxPay API (기본 `https://api.game.x.xehs8qjfwk.vip`)
+- `SYNC_SECRET`: (선택) `/api/transactions/sync` 호출 시 인증
+
+## 3. 사용자/거래 흐름
+- **첫 화면 (/)**: 회원 로그인 폼 + 회원가입 링크. 로그인 성공 시 구매/판매 금액 입력 + 구매·판매 버튼.
+- **회원가입**: 은행명은 드롭다운(한국 은행 리스트). 가입 후 "가입승인 대기중" 표시, 승인 시 "승인되었습니다." 후 로그인 화면으로 이동.
+- **텔레그램 /start**: "이 채팅방은 가맹점 \"벳이스트\" 전용방입니다.\n궁금하신점은 본사로 문의주세여"
+- **거래**: 금액은 만 원 단위만 허용 (최소 1만, 10000·20000 등). 구매/판매 선택 → 2차 확인 → `POST /api/transactions` → DB에 PENDING 저장 + 관리자에게 텔레그램 알림 (승인/거절 버튼).
+- **관리자 승인 (텔레그램)**: [승인] 시 `lib/axpay.ts`의 `login()` 호출 → 성공 시 Transaction에 `axpayUrl`, `axpayOrderId` 저장, apiStatus IDLE. 실패 시 APPROVED + apiStatus FAILED. 메시지에 구매/판매 구분 포함.
+- **대시보드 (/dashboard)**: 거래 신청 폼 + 처리 중 표시. 승인된 건 중 `axpayUrl` 있으면 **iframe**으로 AxPay 매칭 화면 표시.
+- **거래 상태 동기화**: `GET /api/transactions/sync`를 20초 주기로 호출. `axpayOrderId` 있고 apiStatus IDLE인 건에 대해 order_query → status 1 또는 2이면 order_callback 호출 후 DB apiStatus를 SUCCESS/FAILED로 업데이트.
+
+## 4. 주요 파일
+- `app/page.tsx`: 로그인 + 로그인 후 구매/판매 금액 입력 및 신청 (2차 확인 후 POST /api/transactions, credentials include).
+- `app/dashboard/page.tsx`: 거래 신청 폼, iframe(AxPay URL), 거래 목록, 폴링.
+- `app/api/transactions/route.ts`: GET(본인 거래 목록), POST(거래 생성 + 텔레그램 발송).
+- `app/api/telegram/webhook/route.ts`: 텔레그램 콜백(회원 승인/거절, 거래 승인/거절), 거래 승인 시 axpay.login() 호출.
+- `app/api/transactions/sync/route.ts`: order_query → order_callback, DB 업데이트. 필요 시 SYNC_SECRET 헤더.
+- `lib/axpay.ts`: AxPay 로그인(3.1), order_query(3.3), order_callback(3.4). 실패 시 rawResponse(400자) 반환해 텔레그램 메시지에 포함 가능.
+- `prisma/schema.prisma`: User, Transaction 모델. Transaction: status PENDING/APPROVED/REJECTED, apiStatus IDLE/SUCCESS/FAILED, axpayOrderId, axpayUrl.
+
+## 5. UI/에러 처리
+- Netlify 한도 초과 시 API가 `usage_exceeded` 반환할 수 있음. 이 경우 "호스팅 사용량 한도를 초과했습니다. 잠시 후 다시 시도하거나 관리자에게 문의하세요."로 표시 (page.tsx, dashboard/page.tsx).
+
+---
+
+# AxPay REST API 가이드 (Rev 12.10) 요약
+
+- **기본**: HTTP REST, JSON. 모든 요청 인증은 **form 필드 `token`** (Authorization 헤더 아님). 연동 서버: `https://api.game.x.xehs8qjfwk.vip`.
+
+## 3.1 로그인(구매/판매 등록)
+- **URL**: `POST https://api.game.x.xehs8qjfwk.vip/api/index/login`
+- **Content-Type**: multipart/form-data
+- **요청 필드** (필수):  
+  `token`, `user_id`, `type`(1=구매, 2=판매), `money`(회원 보유금액, 판매 시 거래액 이상), `wallet_car_number`, `wallet_bank`, `wallet_name`, `transaction_amount`(만원단위)
+- **응답**: HTTP 200. body에 `code`(0=성공, 1=실패), `msg`, `time`, `data`  
+  - 성공 시 `data`: `url`(매칭 URL, iframe 표시), `user_id`, `order_id`  
+  - 실패 시 `data`: null, `msg`에 에러 메시지 (예: tokenabsent!, 잔액 부족, 만원 단위 아님 등)
+
+## 3.2 콜백(가맹점 거래번호 연동)
+- **URL**: `POST https://api.game.x.xehs8qjfwk.vip/api/index/callback`
+- **요청**: token, order_id(로그인 API의 order_id 또는 order_query의 order_number), order_play_id(가맹점 거래번호, 예: Transaction.id)
+- **응답**: code 0 시 성공, data null.
+
+## 3.3 구매/판매 진행상태 조회
+- **URL**: `POST https://api.game.x.xehs8qjfwk.vip/api/index/order_query`
+- **요청**: token, order_id
+- **응답**: code 0 시 `data` 배열. 각 항목: order_number, play_order_id, type, deal(완료금액), num(신청금액), completion_time, **status**(1=성공, 2=실패, 3=진행중), dispute 등.  
+  status 1 또는 2가 되면 주문 핸들링(3.4) 호출 필요. 권장 호출 주기 20초.
+
+## 3.4 주문 핸들링
+- **URL**: `POST https://api.game.x.xehs8qjfwk.vip/api/index/order_callback`
+- **요청**: token, order_id 만 (status 파라미터 없음)
+- **응답**: code 0 시 성공. 처리 후 order_query 재호출 시 "Record does not exist" 반환.
+
+## 3.6 로그인 정보 재조회
+- **URL**: `POST https://api.game.x.xehs8qjfwk.vip/api/index/order_info`
+- **요청**: token, user_id
+- **응답**: code 0 시 data.url, data.user_id (거래 미완료 시 URL 재발급용).
+
+---
+
+# 구현 시 유의사항
+- AxPay 요청 시 **token은 form body에만** 넣고, Authorization 헤더 사용하지 않음.
+- type은 반드시 문자열 "1"(구매) 또는 "2"(판매).
+- 금액 검증: 프론트/백엔드 모두 만 원 단위(최소 10000) 체크.
+- fetch 시 세션이 필요한 API는 `credentials: "include"` 사용.
+- AxPay 실패 시 rawResponse를 텔레그램 메시지에 붙여 두었으므로, 응답 구조가 다르면 해당 내용으로 파싱 보강 가능.

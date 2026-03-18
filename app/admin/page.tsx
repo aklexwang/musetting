@@ -449,15 +449,10 @@ export default function AdminPage() {
                         key={`${item.kind}-${item.id}-${item.createdAt}`}
                         className="rounded-xl bg-slate-800/50 border border-slate-700/40 overflow-hidden"
                       >
-                        <div className="flex items-center justify-center gap-3 py-2 px-4 border-b border-slate-700/40">
-                          <span className={`text-xs font-medium px-2.5 py-1 rounded-md ${item.kind === "회원가입" ? "bg-amber-500/20 text-amber-300" : item.kind === "구매" ? "bg-violet-500/20 text-violet-300" : "bg-pink-500/20 text-pink-300"}`}>
+                        <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-4 gap-y-1 py-3 px-4 text-sm min-w-0">
+                          <span className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-md ${item.kind === "회원가입" ? "bg-amber-500/20 text-amber-300" : item.kind === "구매" ? "bg-violet-500/20 text-violet-300" : "bg-pink-500/20 text-pink-300"}`}>
                             {item.kind === "회원가입" ? t.memberReg : item.kind === "구매" ? t.buy : t.sell}
                           </span>
-                          <span className="text-slate-500 text-xs tabular-nums">
-                            {new Date(item.createdAt).toLocaleString(numFmt, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-5 gap-x-2 sm:gap-x-4 gap-y-1 py-3 px-4 text-sm min-w-0">
                           <div className="flex flex-col items-center text-center min-w-0">
                             <span className="text-xs text-slate-500">{t.id}</span>
                             <span className="text-slate-200 font-medium mt-0.5 truncate max-w-full">{item.username}</span>
@@ -482,6 +477,11 @@ export default function AdminPage() {
                           ) : (
                             <div className="flex flex-col items-center text-center min-w-0" />
                           )}
+                        </div>
+                        <div className="px-4 pb-3 pt-0">
+                          <span className="text-slate-500 text-xs tabular-nums">
+                            {new Date(item.createdAt).toLocaleString(numFmt, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          </span>
                         </div>
                       </li>
                     ))}
